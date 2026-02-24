@@ -902,6 +902,58 @@ function gameLoop() {
 startBtn.addEventListener('click', initGame);
 restartBtn.addEventListener('click', initGame);
 
+// --- 모바일 터치 및 데스크탑 클릭 드래그 이벤트 (슬라임 점프 조작) ---
+function handleStart(e) {
+    if (state !== 'PLAYING' || !slime.canJump) return;
+    isDragging = true;
+    let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    let clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    dragStart = { x: clientX, y: clientY };
+    dragCurrent = { x: clientX, y: clientY };
+}
+
+function handleMove(e) {
+    if (!isDragging) return;
+    if (e.cancelable) e.preventDefault(); // 모바일 환경 스크롤 방지
+    let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    let clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    dragCurrent = { x: clientX, y: clientY };
+}
+
+function handleEnd(e) {
+    if (!isDragging) return;
+    isDragging = false;
+
+    let dx = dragStart.x - dragCurrent.x;
+    let dy = dragStart.y - dragCurrent.y;
+    let dist = Math.sqrt(dx * dx + dy * dy);
+
+    // 최소 드래그 거리 (5px)
+    if (dist > 5) {
+        if (dist > MAX_DRAG_DIST) {
+            dx = (dx / dist) * MAX_DRAG_DIST;
+            dy = (dy / dist) * MAX_DRAG_DIST;
+        }
+
+        slime.vx = dx * SLING_POWER;
+        slime.vy = dy * SLING_POWER;
+        slime.canJump = false;
+        slime.isSticking = false;
+        slime.stickTimer = 0;
+
+        createParticles(slime.x, slime.y, 10, slime.color);
+        screenShake = 3;
+    }
+}
+
+canvas.addEventListener('mousedown', handleStart);
+window.addEventListener('mousemove', handleMove, { passive: false });
+window.addEventListener('mouseup', handleEnd);
+
+canvas.addEventListener('touchstart', handleStart, { passive: false });
+window.addEventListener('touchmove', handleMove, { passive: false });
+window.addEventListener('touchend', handleEnd);
+
 slime = new Slime();
 walls = [new Wall(0, ch - 50, cw, 100, 'normal')];
 particles = [];
