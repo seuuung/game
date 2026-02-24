@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Magnetic Orbit</title>
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="text-white">
+
+    <!-- 캔버스 영역 -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- UI 오버레이 (점수판) -->
+    <div id="uiLayer"
+        class="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 md:p-8 safe-padding z-10">
+        <div class="flex justify-between items-start">
+            <div class="drop-shadow-md">
+                <h1 class="text-lg md:text-2xl font-bold tracking-wider text-cyan-400">MAGNETIC ORBIT</h1>
+                <p class="text-[10px] md:text-sm text-gray-300 bg-black/40 px-2 py-1 rounded-md inline-block mt-1">
+                    누르고 있으면 당김 / 떼면 밀림
+                </p>
+            </div>
+            <div class="text-right bg-black/50 px-3 py-2 rounded-xl border border-white/10 backdrop-blur-sm">
+                <div class="text-[10px] md:text-sm text-cyan-400 uppercase tracking-widest font-semibold">Score</div>
+                <div id="scoreDisplay" class="text-2xl md:text-4xl font-mono font-bold text-white leading-none mt-1">0
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 메뉴/게임오버 화면 -->
+    <div id="menuScreen"
+        class="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm transition-opacity duration-300 z-50">
+        <div
+            class="glass-panel p-6 md:p-12 rounded-2xl text-center max-w-sm md:max-w-md w-full mx-4 shadow-[0_0_40px_rgba(6,182,212,0.15)] flex flex-col items-center pointer-events-auto">
+
+            <div id="statusIcon"
+                class="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 mb-4 flex items-center justify-center shadow-lg shadow-cyan-500/30 animate-pulse">
+                <div class="w-8 h-8 rounded-full bg-black"></div>
+            </div>
+
+            <h2 id="menuTitle"
+                class="text-3xl md:text-4xl font-extrabold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500 tracking-tight">
+                MAGNETIC ORBIT</h2>
+            <p id="menuSubtitle" class="text-sm md:text-base text-gray-300 mb-8 font-medium">넓은 시야에서 다가오는 파편을 피하세요.</p>
+
+            <div id="finalScoreContainer" class="hidden w-full bg-black/50 py-4 rounded-xl border border-white/10 mb-8">
+                <div class="text-xs text-gray-400 uppercase tracking-widest mb-1">Final Score</div>
+                <div id="finalScore" class="text-4xl md:text-5xl font-mono font-bold text-white">0</div>
+            </div>
+
+            <button id="startBtn"
+                class="w-full py-4 px-6 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-lg rounded-xl transition-all transform active:scale-95 shadow-[0_0_20px_rgba(6,182,212,0.4)] cursor-pointer">
+                START GAME
+            </button>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+
+</html>

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>승민's 게임 실험실</title>
+    <title>승민's 실험실</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
@@ -17,26 +17,7 @@
             overflow-x: hidden;
         }
 
-        /* Animated gradient background */
-        .bg-animated {
-            background: linear-gradient(-45deg, #0f172a, #1e1b4b, #020617, #172554);
-            background-size: 400% 400%;
-            animation: gradientBG 15s ease infinite;
-        }
-
-        @keyframes gradientBG {
-            0% {
-                background-position: 0% 50%;
-            }
-
-            50% {
-                background-position: 100% 50%;
-            }
-
-            100% {
-                background-position: 0% 50%;
-            }
-        }
+        /* background removed for performance */
 
         /* Glassmorphism panel */
         .glass-card {
@@ -68,20 +49,21 @@
     </style>
 </head>
 
-<body class="bg-animated min-h-screen flex flex-col items-center justify-center p-6 sm:p-12 relative">
+<body
+    class="bg-slate-900 min-h-screen flex flex-col items-center justify-center p-4 sm:p-8 relative selection:bg-cyan-500/30">
 
-    <!-- Ambient lights -->
+    <!-- Ambient lights (Simplified for Performance) -->
     <div
-        class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-cyan-600 rounded-full mix-blend-screen filter blur-[120px] opacity-30 animate-pulse">
+        class="absolute top-0 left-0 w-64 h-64 bg-cyan-600/20 rounded-full mix-blend-screen filter blur-3xl opacity-40 pointer-events-none">
     </div>
     <div
-        class="absolute bottom-[-10%] right-[-10%] w-[30rem] h-[30rem] bg-purple-700 rounded-full mix-blend-screen filter blur-[150px] opacity-20">
+        class="absolute bottom-0 right-0 w-80 h-80 bg-purple-700/20 rounded-full mix-blend-screen filter blur-3xl opacity-30 pointer-events-none">
     </div>
 
-    <header class="mb-16 sm:mb-24 text-center z-10 w-full">
-        <h1 class="text-5xl sm:text-7xl font-extrabold tracking-tight mb-4">
-            <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600 neon-text">승민's</span>
-            <span class="text-white"> 게임 실험실</span>
+    <header class="mb-10 sm:mb-20 text-center z-10 w-full pt-8">
+        <h1 class="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight mb-3">
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 neon-text">승민's</span>
+            <span class="text-white"> 실험실</span>
         </h1>
         <p class="text-slate-400 text-lg sm:text-xl font-light tracking-wide max-w-lg mx-auto">
             사이드 프로젝트 게임들을 즐겨보세요!
@@ -93,10 +75,10 @@
 
             <!-- Game Card 1 -->
             <a href="games/slime_jump/index.html"
-                class="glass-card rounded-3xl p-6 sm:p-8 flex flex-col group cursor-pointer block"
+                class="glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 flex flex-col group cursor-pointer block active:scale-[0.98]"
                 style="text-decoration: none;">
                 <div
-                    class="w-full aspect-video bg-gradient-to-br from-cyan-900 to-slate-900 rounded-2xl mb-6 relative overflow-hidden flex items-center justify-center border border-cyan-500/20">
+                    class="w-full aspect-video bg-gradient-to-br from-cyan-900 to-slate-900 rounded-xl sm:rounded-2xl mb-4 sm:mb-6 relative overflow-hidden flex items-center justify-center border border-cyan-500/20">
                     <!-- Slime Icon Simulation -->
                     <div
                         class="w-16 h-16 bg-gradient-to-tr from-cyan-400 to-purple-500 rounded-t-full rounded-b-lg shadow-[0_0_30px_rgba(6,182,212,0.8)] relative">
@@ -109,15 +91,16 @@
                     </div>
                 </div>
 
-                <h2 class="text-2xl font-bold mb-2 text-white group-hover:text-cyan-300 transition-colors">Slime Jump
+                <h2 class="text-xl sm:text-2xl font-bold mb-2 text-white group-hover:text-cyan-300 transition-colors">
+                    Slime Jump
                 </h2>
-                <p class="text-slate-400 text-sm mb-6 flex-grow leading-relaxed">
+                <p class="text-slate-400 text-xs sm:text-sm mb-5 sm:mb-6 flex-grow leading-relaxed line-clamp-3">
                     벽을 튕기며 끝없이 위로 올라가는 중독성 강한 하이퍼 캐주얼 점프 게임. 부스트 구슬을 모아 우주로 향하세요!
                 </p>
 
                 <div class="flex items-center justify-between mt-auto">
                     <span
-                        class="text-xs font-semibold px-3 py-1 bg-cyan-500/20 text-cyan-300 rounded-full border border-cyan-500/30">Arcade
+                        class="text-[10px] sm:text-xs font-semibold px-2 sm:px-3 py-1 bg-cyan-500/20 text-cyan-300 rounded-full border border-cyan-500/30">Arcade
                         / Action</span>
                     <button
                         class="bg-white/10 group-hover:bg-cyan-500/50 text-white p-2 border border-white/10 group-hover:border-cyan-400/50 rounded-full transition-all backdrop-blur-md">
@@ -130,24 +113,63 @@
                 </div>
             </a>
 
-            <!-- Coming Soon Card -->
-            <div class="glass-card coming-soon-card rounded-3xl p-6 sm:p-8 flex flex-col opacity-60">
+            <!-- Game Card 2 -->
+            <a href="games/Magnetic_Orbit/index.html"
+                class="glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 flex flex-col group cursor-pointer block active:scale-[0.98]"
+                style="text-decoration: none;">
                 <div
-                    class="w-full aspect-video bg-slate-800/50 rounded-2xl mb-6 relative overflow-hidden flex items-center justify-center border border-slate-700/50">
-                    <svg class="w-12 h-12 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    class="w-full aspect-video bg-gradient-to-br from-indigo-900 to-slate-900 rounded-xl sm:rounded-2xl mb-4 sm:mb-6 relative overflow-hidden flex items-center justify-center border border-indigo-500/20">
+                    <!-- Magnetic Orbit Icon Simulation -->
+                    <div
+                        class="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 shadow-[0_0_30px_rgba(6,182,212,0.8)] relative flex items-center justify-center">
+                        <div class="w-8 h-8 bg-black rounded-full"></div>
+                    </div>
+                    <!-- Overlay -->
+                    <div
+                        class="absolute inset-0 bg-indigo-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    </div>
+                </div>
+
+                <h2 class="text-2xl font-bold mb-2 text-white group-hover:text-indigo-300 transition-colors">Magnetic
+                    Orbit
+                </h2>
+                <p class="text-slate-400 text-sm mb-6 flex-grow leading-relaxed">
+                    넓은 시야에서 다가오는 파편을 피하세요. 누르고 떼는 단순한 조작으로 중력과 원심력을 제어하는 아케이드 게임!
+                </p>
+
+                <div class="flex items-center justify-between mt-auto">
+                    <span
+                        class="text-[10px] sm:text-xs font-semibold px-2 sm:px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded-full border border-indigo-500/30">Arcade
+                        / Avoidance</span>
+                    <button
+                        class="bg-white/10 group-hover:bg-indigo-500/50 text-white p-2 border border-white/10 group-hover:border-indigo-400/50 rounded-full transition-all backdrop-blur-md">
+                        <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7">
+                            </path>
+                        </svg>
+                    </button>
+                </div>
+            </a>
+
+            <div class="glass-card coming-soon-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 flex flex-col opacity-50">
+                <div
+                    class="w-full aspect-video bg-slate-800/40 rounded-xl sm:rounded-2xl mb-4 sm:mb-6 relative overflow-hidden flex items-center justify-center border border-slate-700/50">
+                    <svg class="w-10 h-10 sm:w-12 sm:h-12 text-slate-600" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                             d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                     </svg>
                 </div>
 
-                <h2 class="text-2xl font-bold mb-2 text-slate-300">Coming Soon</h2>
-                <p class="text-slate-500 text-sm mb-6 flex-grow leading-relaxed">
+                <h2 class="text-xl sm:text-2xl font-bold mb-2 text-slate-400">Coming Soon</h2>
+                <p class="text-slate-500 text-xs sm:text-sm mb-5 sm:mb-6 flex-grow leading-relaxed line-clamp-3">
                     새로운 게임이 준비 중입니다. 어떤 게임이 추가될지 기대해 주세요!
                 </p>
 
                 <div class="flex items-center justify-between mt-auto">
                     <span
-                        class="text-xs font-semibold px-3 py-1 bg-slate-800 text-slate-400 rounded-full border border-slate-700">Mystery</span>
+                        class="text-[10px] sm:text-xs font-semibold px-2 sm:px-3 py-1 bg-slate-800 text-slate-400 rounded-full border border-slate-700">Mystery</span>
                 </div>
             </div>
 
