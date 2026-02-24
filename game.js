@@ -11,13 +11,16 @@ const startBtn = document.getElementById('startBtn');
 const restartBtn = document.getElementById('restartBtn');
 
 let MAX_DRAG_DIST = 160;
+let SLING_POWER = 0.22;
 let cw, ch;
 function resizeCanvas() {
     cw = window.innerWidth;
     ch = window.innerHeight;
     canvas.width = cw;
     canvas.height = ch;
-    MAX_DRAG_DIST = Math.max(100, Math.min(160, Math.min(cw, ch) * 0.35));
+    MAX_DRAG_DIST = Math.max(90, Math.min(160, Math.min(cw, ch) * 0.35));
+    // 모바일에서는 드래그 시 슬라임이 너무 날뛰지 않도록 파워를 상대적으로 줄입니다.
+    SLING_POWER = cw < 600 ? 0.15 : 0.22;
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
@@ -35,7 +38,6 @@ const GRAVITY = 0.4;
 const FRICTION = 0.98;
 const SLIDE_SPEED = 1.8;
 const MAX_SPEED = 24;
-const SLING_POWER = 0.22;
 const WALL_EDGE_WIDTH = 15;
 
 let isDragging = false;
@@ -586,14 +588,15 @@ function generateWall(topWall, scoreMultiplier) {
     if (isHorizontal) {
         // 수평 벽: 너비는 너무 좁은 화면을 가리지 않게 상한선 제한
         let maxW = Math.max(cw - margin * 2 - 20, 50);
-        w = Math.min(Math.random() * (cw * 0.2) + 60, maxW);
-        h = Math.random() * 15 + 15;
+        w = Math.min(Math.random() * (cw * 0.3) + 80, maxW); // 데스크탑에서 좀 더 길게 생성
+        h = Math.random() * 15 + 15; // 굵기는 얇게 유지
     } else {
-        // 수직 벽: 굵기(너비)는 화면의 일부분, 길이(높이)도 반응형 제한
+        // 수직 벽: 굵기(너비)는 적절히 얇게 유지, 길이(높이)도 반응형 제한
         let maxW = Math.max(cw * 0.08, 20);
-        w = Math.max(Math.random() * 20 + 20, maxW);
-        let maxH = ch * (cw < 600 ? 0.25 : 0.35); // 모바일에서는 높이를 조금 더 줄임
-        h = Math.min(Math.random() * 100 + 80, maxH);
+        // 이전에 w = Math.max(...) 로 되어 있어서 데스크탑에서 무조건 통통해지는 버그 수정 (Math.min 적용)
+        w = Math.min(Math.random() * 15 + 25, maxW);
+        let maxH = ch * (cw < 600 ? 0.25 : 0.4); // 데스크탑에서 벽 길이를 좀 더 길게 생성
+        h = Math.min(Math.random() * (ch * 0.15) + 120, maxH);
     }
 
     let x;
