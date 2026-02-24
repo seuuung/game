@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>3D 랜덤 미로 탈출</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
+</head>
+
+<body>
+    <div id="crosshair">
+        <div class="ch-line horizontal"></div>
+        <div class="ch-line vertical"></div>
+    </div>
+
+    <div id="hud">
+        <span class="orbitron" style="font-size: 0.9rem; letter-spacing: 3px;">TIME ELAPSED</span>
+        <div id="timer-display" class="orbitron">00:00</div>
+    </div>
+
+    <!-- 모바일 터치 UI 레이어 -->
+    <div id="mobile-ui">
+        <div id="joystick-zone" class="touch-zone">
+            <div id="joystick-base">
+                <div id="joystick-thumb"></div>
+            </div>
+        </div>
+        <div id="look-zone" class="touch-zone"></div>
+        <div id="action-btn">
+            <svg viewBox="0 0 24 24">
+                <path
+                    d="M12.5 2a2.5 2.5 0 0 0-2.5 2.5V7H8a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1h-2V4.5A2.5 2.5 0 0 0 12.5 2zM7 12v8a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-8H7zm4 2h2v5h-2v-5z" />
+            </svg>
+        </div>
+    </div>
+
+    <div id="blocker">
+        <div id="instructions">
+            <h1 class="orbitron">MAZE RUNNER</h1>
+            <div id="desktop-desc">
+                <p>
+                    <span class="key">W</span> <span class="key">A</span> <span class="key">S</span> <span
+                        class="key">D</span> : 이동<br>
+                    <strong>마우스</strong> : 시야 조작<br>
+                    <strong>좌클릭</strong> : 마커 스프레이 <span style="color:#ff0055">(빈 벽: 칠하기, 마커: 지우기)</span><br>
+                    <br>빛나는 <strong style="color: #00f0ff;">파란색 포탈</strong>을 찾아 탈출하세요!
+                </p>
+                <p class="blink" style="font-size: 1.2rem; font-weight: bold; color: #00f0ff; margin-top: 30px;">[ 화면을
+                    클릭하여 접속 ]</p>
+            </div>
+            <div id="mobile-desc" style="display: none;">
+                <p>
+                    <strong>화면 좌측</strong> : 이동 조이스틱<br>
+                    <strong>화면 우측</strong> : 시야 조작<br>
+                    <strong>우측 하단 버튼</strong> : 마커 칠하기/지우기<br>
+                    <br>빛나는 <strong style="color: #00f0ff;">파란색 포탈</strong>을 찾아 탈출하세요!
+                </p>
+                <p class="blink" style="font-size: 1.2rem; font-weight: bold; color: #00f0ff; margin-top: 30px;">[ 화면을
+                    터치하여 접속 ]</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="win-screen">
+        <div class="win-panel">
+            <h1 class="orbitron glow-text">SYSTEM CLEAR</h1>
+            <p>탈출 소요 시간: <span id="final-time" class="orbitron"
+                    style="color: #00f0ff; font-size: 1.5rem; margin-left: 10px;">00:00</span></p>
+            <!-- location.reload() 대신 resetGame() 함수 호출로 변경 -->
+            <button class="orbitron" onclick="resetGame()">REBOOT SYSTEM</button>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+
+</html>
