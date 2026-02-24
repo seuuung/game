@@ -578,18 +578,22 @@ function generateWall(topWall, scoreMultiplier) {
     let isHorizontal = Math.random() < 0.10;
     let w, h;
 
-    // 슬라임이 쉽게 통과할 수 있도록 최소 간격을 크게 설정 (기본 여백을 대폭 증가)
-    let margin = Math.max(WALL_EDGE_WIDTH + 100, cw * 0.25);
+    // 모바일 환경(폭이 좁은 경우) 중앙 병목 방지
+    // 큰 화면(PC)에서는 넉넉하게 띄우고, 폭이 좁아지면 간격 비율을 크게 줄임
+    let baseMargin = cw < 600 ? 30 : 100; // 모바일이면 여백 최소한으로 보장
+    let margin = Math.max(WALL_EDGE_WIDTH + baseMargin, cw * (cw < 600 ? 0.1 : 0.25));
 
     if (isHorizontal) {
+        // 수평 벽: 너비는 너무 좁은 화면을 가리지 않게 상한선 제한
         let maxW = Math.max(cw - margin * 2 - 20, 50);
-        w = Math.min(Math.random() * 100 + 80, maxW);
+        w = Math.min(Math.random() * (cw * 0.2) + 60, maxW);
         h = Math.random() * 15 + 15;
     } else {
-        let maxW = Math.max(cw * 0.1, 20);
-        w = Math.min(Math.random() * 20 + 30, maxW);
-        let maxH = ch * 0.35; // 세로 벽 높이도 조금 줄여 난이도 개선
-        h = Math.min(Math.random() * 100 + 100, maxH);
+        // 수직 벽: 굵기(너비)는 화면의 일부분, 길이(높이)도 반응형 제한
+        let maxW = Math.max(cw * 0.08, 20);
+        w = Math.max(Math.random() * 20 + 20, maxW);
+        let maxH = ch * (cw < 600 ? 0.25 : 0.35); // 모바일에서는 높이를 조금 더 줄임
+        h = Math.min(Math.random() * 100 + 80, maxH);
     }
 
     let x;
@@ -598,12 +602,14 @@ function generateWall(topWall, scoreMultiplier) {
         x = margin + Math.random() * Math.max(cw - w - margin * 2, 0);
     } else {
         let isLeft = topWall ? (topWall.x > cw / 2) : (Math.random() > 0.5);
+
+        // 모바일 환경처럼 폭이 좁은 경우, 벽의 위치를 더 끝으로 몰아 중앙 돌파 공간 확보
+        let spreadRatio = cw < 600 ? 0.05 : 0.1;
+
         if (isLeft) {
-            // 왼쪽 벽 배치를 조금 더 안쪽으로
-            x = margin + Math.random() * (cw * 0.1);
+            x = margin + Math.random() * (cw * spreadRatio);
         } else {
-            // 오른쪽 벽 배치를 조금 더 안쪽으로
-            x = cw - margin - w - Math.random() * (cw * 0.1);
+            x = cw - margin - w - Math.random() * (cw * spreadRatio);
         }
     }
 
