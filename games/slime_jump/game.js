@@ -21,7 +21,7 @@ const FRICTION = 0.98;
 let SLIDE_SPEED = 1.8;
 let MAX_SPEED = 20;
 let SLING_POWER = 0.135;
-const WALL_EDGE_WIDTH = 15;
+let WALL_EDGE_WIDTH = 15;
 
 function resizeCanvas() {
     cw = window.innerWidth;
@@ -37,6 +37,7 @@ function resizeCanvas() {
         GRAVITY = 0.4 * GAME_SCALE;
         SLIDE_SPEED = 1.8 * GAME_SCALE;
         MAX_SPEED = 20 * GAME_SCALE;
+        WALL_EDGE_WIDTH = 15 * GAME_SCALE;
 
         MAX_DRAG_DIST = Math.max(100, Math.min(220, Math.min(cw, ch) * 0.45));
         // 모바일 환경에서도 비율적으로 동일한 점프 궤적을 그리려면, 속도와 중력이 스케일된 상태에서
@@ -44,6 +45,10 @@ function resizeCanvas() {
         SLING_POWER = 0.135;
     } else {
         MAX_DRAG_DIST = Math.max(100, Math.min(220, Math.min(cw, ch) * 0.45));
+    }
+
+    if (typeof slime !== 'undefined' && slime !== null) {
+        slime.radius = 14 * GAME_SCALE;
     }
 }
 window.addEventListener('resize', resizeCanvas);
@@ -84,7 +89,7 @@ class Star {
 
 class Slime {
     constructor() {
-        this.radius = Math.max(12, Math.min(cw * 0.04, 16));
+        this.radius = 14 * GAME_SCALE;
         this.x = cw / 2;
         this.y = ch - 100;
         this.vx = 0;
@@ -180,11 +185,29 @@ class Slime {
             let checkRadius = this.radius + 1.0;
             if (distSq <= checkRadius * checkRadius) {
                 let dist = Math.sqrt(distSq);
-                if (dist === 0) { this.y -= this.radius; continue; }
+                let nx, ny, pen;
 
-                let nx = dx / dist;
-                let ny = dy / dist;
-                let pen = this.radius - dist;
+                if (dist === 0) {
+                    let distTop = this.y - w.y;
+                    let distBottom = (w.y + w.h) - this.y;
+                    let distLeft = this.x - w.x;
+                    let distRight = (w.x + w.w) - this.x;
+                    let minDist = Math.min(distTop, distBottom, distLeft, distRight);
+
+                    if (minDist === distTop) {
+                        nx = 0; ny = -1; pen = this.radius + distTop;
+                    } else if (minDist === distBottom) {
+                        nx = 0; ny = 1; pen = this.radius + distBottom;
+                    } else if (minDist === distLeft) {
+                        nx = -1; ny = 0; pen = this.radius + distLeft;
+                    } else {
+                        nx = 1; ny = 0; pen = this.radius + distRight;
+                    }
+                } else {
+                    nx = dx / dist;
+                    ny = dy / dist;
+                    pen = this.radius - dist;
+                }
 
                 if (pen > 0) {
                     this.x += nx * pen;
@@ -522,7 +545,7 @@ class Wall {
 class Orb {
     constructor(x, y) {
         this.x = x; this.y = y;
-        this.radius = 12;
+        this.radius = 12 * GAME_SCALE;
         this.baseY = y;
         this.offsetY = Math.random() * Math.PI * 2;
         this.pulse = 0;
@@ -563,12 +586,12 @@ class Orb {
 class Particle {
     constructor(x, y, color) {
         this.x = x; this.y = y;
-        this.vx = (Math.random() - 0.5) * 12;
-        this.vy = (Math.random() - 0.5) * 12;
+        this.vx = (Math.random() - 0.5) * 12 * GAME_SCALE;
+        this.vy = (Math.random() - 0.5) * 12 * GAME_SCALE;
         this.life = 1;
         this.decay = Math.random() * 0.04 + 0.02;
         this.color = color;
-        this.size = Math.random() * 4 + 2;
+        this.size = (Math.random() * 4 + 2) * GAME_SCALE;
     }
     update() {
         this.x += this.vx;
@@ -598,23 +621,19 @@ function generateWall(topWall, scoreMultiplier) {
 
     let isMobile = cw < 600;
 
-    // 모바일 환경(폭이 좁은 경우) 중앙 병목 방지
-    // 큰 화면(PC)에서는 넉넉하게 띄우고, 폭이 좁아지면 간격 비율을 크게 줄임
-    let baseMargin = isMobile ? 30 : 100;
+    let baseMargin = isMobile ? 30 * GAME_SCALE : 100 * GAME_SCALE;
     let margin = Math.max(WALL_EDGE_WIDTH + baseMargin, cw * (isMobile ? 0.1 : 0.25));
 
     if (isHorizontal) {
-        // 수평 벽: 길이는 길게, 두께(h)는 얇고 단단하게 고정
-        let minW = 60;
+        let minW = Math.max(cw * 0.1, 60 * GAME_SCALE);
         let maxW = isMobile ? cw * 0.6 : cw * 0.3;
         w = Math.min(Math.max(Math.random() * (cw * 0.2) + minW, minW), maxW);
-        h = Math.random() * 10 + (isMobile ? 12 : 15); // 두께 12~25px
+        h = Math.random() * 10 * GAME_SCALE + (isMobile ? 12 * GAME_SCALE : 15 * GAME_SCALE);
     } else {
-        // 수직 벽: 두께(w)는 얇게 고정, 길이는 길게
-        w = Math.random() * 10 + (isMobile ? 12 : 15); // 두께 12~25px
+        w = Math.random() * 10 * GAME_SCALE + (isMobile ? 12 * GAME_SCALE : 15 * GAME_SCALE);
 
-        let minH = 80;
-        let maxH = isMobile ? ch * 0.3 : ch * 0.5; // 데스크탑에서 긴 기둥 지원
+        let minH = Math.max(ch * 0.1, 80 * GAME_SCALE);
+        let maxH = isMobile ? ch * 0.3 : ch * 0.5;
         h = Math.min(Math.max(Math.random() * (ch * 0.2) + minH, minH), maxH);
     }
 
@@ -642,7 +661,8 @@ function generateWall(topWall, scoreMultiplier) {
         else if (rand < 0.4) type = 'fragile';
     }
 
-    let gapY = isHorizontal ? (Math.random() * 40 + 40) : (Math.random() * 80 - 40);
+    let gapMultiplier = Math.max(0.8, GAME_SCALE);
+    let gapY = isHorizontal ? (Math.random() * 40 + 40) * gapMultiplier : (Math.random() * 80 - 40) * gapMultiplier;
     let currentY = topWall ? topWall.y - h - gapY : ch - 200;
 
     // 생성된 벽끼리 겹치는지 체크하는 루프 추가 (최대 10회까지 위로 띄워가며 빈 공간 찾기)
@@ -663,7 +683,7 @@ function generateWall(topWall, scoreMultiplier) {
         }
         if (isOverlapping) {
             // 겹친다면 위쪽(Y좌표 감소)으로 조금 더 이동시켜 겹침을 해소 시도
-            currentY -= 40;
+            currentY -= (40 * GAME_SCALE);
             attempts++;
         }
     }
@@ -688,7 +708,7 @@ function initGame() {
     score = 0;
     cameraY = 0;
     screenShake = 0;
-    fog = { y: ch + 600, speed: 0.6 * GAME_SCALE, active: false }; // 안개 초기 속도 하향 및 스케일 적용
+    fog = { y: ch + 1000 * Math.max(1, GAME_SCALE), speed: 0.6 * GAME_SCALE, active: false }; // 안개 초기 속도 하향 및 여유 거리 확보
 
     // 우주 배경 입자 초기화
     for (let i = 0; i < 40; i++) stars.push(new Star());
@@ -814,7 +834,7 @@ function update() {
         if (fog.y > cameraY + ch + 1200) fog.y = cameraY + ch + 1200;
         if (slime.y > fog.y) gameOver();
     } else {
-        fog.y = cameraY + ch + 600;
+        fog.y = cameraY + ch + 1000 * Math.max(1, GAME_SCALE);
     }
 
     particles.forEach(p => p.update());
@@ -914,6 +934,7 @@ function draw() {
             let steps = 25;
             for (let i = 1; i <= steps; i++) {
                 simVy += GRAVITY; // 시뮬레이션 중력 적용
+                simVx *= FRICTION; // 공기 저항 추가
                 simX += simVx;
                 simY += simVy;
                 ctx.lineTo(simX, simY);
