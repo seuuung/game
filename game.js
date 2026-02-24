@@ -11,16 +11,40 @@ const startBtn = document.getElementById('startBtn');
 const restartBtn = document.getElementById('restartBtn');
 
 let MAX_DRAG_DIST = 160;
-let SLING_POWER = 0.22;
 let cw, ch;
+
+// 전역 게임 물리 상수들을 resizeCanvas 호출 전에 미리 선언하여 TDZ 참조 에러 방지
+let slime, fog, walls, particles, orbs, stars;
+let GAME_SCALE = 1;
+let GRAVITY = 0.4;
+const FRICTION = 0.98;
+let SLIDE_SPEED = 1.8;
+let MAX_SPEED = 20;
+let SLING_POWER = 0.135;
+const WALL_EDGE_WIDTH = 15;
+
 function resizeCanvas() {
     cw = window.innerWidth;
     ch = window.innerHeight;
     canvas.width = cw;
     canvas.height = ch;
-    MAX_DRAG_DIST = Math.max(90, Math.min(160, Math.min(cw, ch) * 0.35));
-    // 모바일에서는 드래그 시 슬라임이 너무 날뛰지 않도록 파워를 상대적으로 줄입니다.
-    SLING_POWER = cw < 600 ? 0.15 : 0.22;
+
+    // 기기 화면 크기(800 기준)에 비례하여 동일한 템포가 제공되도록 스케일 계산
+    if (typeof GAME_SCALE !== 'undefined') {
+        GAME_SCALE = Math.min(cw, ch) / 800;
+        GAME_SCALE = Math.max(0.4, Math.min(GAME_SCALE, 1.2));
+
+        GRAVITY = 0.4 * GAME_SCALE;
+        SLIDE_SPEED = 1.8 * GAME_SCALE;
+        MAX_SPEED = 20 * GAME_SCALE;
+
+        MAX_DRAG_DIST = Math.max(100, Math.min(220, Math.min(cw, ch) * 0.45));
+        // 모바일 환경에서도 비율적으로 동일한 점프 궤적을 그리려면, 속도와 중력이 스케일된 상태에서
+        // SLING_POWER(감도)는 고정되어야 물리 수식 상 동일하게 적용됩니다.
+        SLING_POWER = 0.135;
+    } else {
+        MAX_DRAG_DIST = Math.max(100, Math.min(220, Math.min(cw, ch) * 0.45));
+    }
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
@@ -31,14 +55,6 @@ let highScore = localStorage.getItem('slimeWallJumpHigh') || 0;
 highScoreText.innerText = highScore;
 let cameraY = 0;
 let screenShake = 0;
-
-let slime, fog, walls, particles, orbs, stars;
-
-const GRAVITY = 0.4;
-const FRICTION = 0.98;
-const SLIDE_SPEED = 1.8;
-const MAX_SPEED = 24;
-const WALL_EDGE_WIDTH = 15;
 
 let isDragging = false;
 let dragStart = { x: 0, y: 0 };
@@ -97,7 +113,7 @@ class Slime {
             this.boostTimer--;
             if (this.boostTimer === 0) {
                 this.parachuteTimer = 100;
-                this.vy = -2;
+                this.vy = -2 * GAME_SCALE;
             }
             this.color = '#fbbf24';
             this.glowColor = '#fde047';
@@ -114,7 +130,7 @@ class Slime {
         if ((!this.isSticking || this.stickTimer <= 0) && this.boostTimer <= 0) {
             if (this.parachuteTimer > 0) {
                 this.vy += GRAVITY * 0.1;
-                if (this.vy > 2.5) this.vy = 2.5;
+                if (this.vy > 2.5 * GAME_SCALE) this.vy = 2.5 * GAME_SCALE;
             } else {
                 this.vy += GRAVITY;
             }
@@ -180,7 +196,7 @@ class Slime {
                 if (w.type === 'bouncy') {
                     if (Math.abs(nx) > Math.abs(ny)) {
                         this.vx = nx * MAX_SPEED * 0.8;
-                        this.vy = -12;
+                        this.vy = -12 * GAME_SCALE;
                     } else {
                         this.vy = ny * MAX_SPEED * 0.8;
                     }
@@ -216,7 +232,7 @@ class Slime {
                 this.stickTimer = this.maxStickTime;
                 this.parachuteTimer = 0;
                 createParticles(this.x, this.y, 5, touchedWallRef ? touchedWallRef.color : '#0ea5e9');
-                if (Math.abs(prevVx) > 4 || Math.abs(prevVy) > 4) screenShake = 2;
+                if (Math.abs(prevVx) > 4 * GAME_SCALE || Math.abs(prevVy) > 4 * GAME_SCALE) screenShake = 2;
             }
 
             if (touchedWallRef && touchedWallRef.type === 'fragile') {
@@ -580,23 +596,26 @@ function generateWall(topWall, scoreMultiplier) {
     let isHorizontal = Math.random() < 0.10;
     let w, h;
 
+    let isMobile = cw < 600;
+
     // 모바일 환경(폭이 좁은 경우) 중앙 병목 방지
     // 큰 화면(PC)에서는 넉넉하게 띄우고, 폭이 좁아지면 간격 비율을 크게 줄임
-    let baseMargin = cw < 600 ? 30 : 100; // 모바일이면 여백 최소한으로 보장
-    let margin = Math.max(WALL_EDGE_WIDTH + baseMargin, cw * (cw < 600 ? 0.1 : 0.25));
+    let baseMargin = isMobile ? 30 : 100;
+    let margin = Math.max(WALL_EDGE_WIDTH + baseMargin, cw * (isMobile ? 0.1 : 0.25));
 
     if (isHorizontal) {
-        // 수평 벽: 너비는 너무 좁은 화면을 가리지 않게 상한선 제한
-        let maxW = Math.max(cw - margin * 2 - 20, 50);
-        w = Math.min(Math.random() * (cw * 0.3) + 80, maxW); // 데스크탑에서 좀 더 길게 생성
-        h = Math.random() * 15 + 15; // 굵기는 얇게 유지
+        // 수평 벽: 길이는 길게, 두께(h)는 얇고 단단하게 고정
+        let minW = 60;
+        let maxW = isMobile ? cw * 0.6 : cw * 0.3;
+        w = Math.min(Math.max(Math.random() * (cw * 0.2) + minW, minW), maxW);
+        h = Math.random() * 10 + (isMobile ? 12 : 15); // 두께 12~25px
     } else {
-        // 수직 벽: 굵기(너비)는 적절히 얇게 유지, 길이(높이)도 반응형 제한
-        let maxW = Math.max(cw * 0.08, 20);
-        // 이전에 w = Math.max(...) 로 되어 있어서 데스크탑에서 무조건 통통해지는 버그 수정 (Math.min 적용)
-        w = Math.min(Math.random() * 15 + 25, maxW);
-        let maxH = ch * (cw < 600 ? 0.25 : 0.4); // 데스크탑에서 벽 길이를 좀 더 길게 생성
-        h = Math.min(Math.random() * (ch * 0.15) + 120, maxH);
+        // 수직 벽: 두께(w)는 얇게 고정, 길이는 길게
+        w = Math.random() * 10 + (isMobile ? 12 : 15); // 두께 12~25px
+
+        let minH = 80;
+        let maxH = isMobile ? ch * 0.3 : ch * 0.5; // 데스크탑에서 긴 기둥 지원
+        h = Math.min(Math.max(Math.random() * (ch * 0.2) + minH, minH), maxH);
     }
 
     let x;
@@ -626,6 +645,29 @@ function generateWall(topWall, scoreMultiplier) {
     let gapY = isHorizontal ? (Math.random() * 40 + 40) : (Math.random() * 80 - 40);
     let currentY = topWall ? topWall.y - h - gapY : ch - 200;
 
+    // 생성된 벽끼리 겹치는지 체크하는 루프 추가 (최대 10회까지 위로 띄워가며 빈 공간 찾기)
+    let attempts = 0;
+    let isOverlapping = true;
+    while (isOverlapping && attempts < 10 && topWall) {
+        isOverlapping = false;
+        // 가장 최근에 생성된 최대 10개의 벽에 대해서만 충돌 검사
+        let checkCount = Math.min(walls.length, 10);
+        for (let i = walls.length - 1; i >= walls.length - checkCount; i--) {
+            let wall = walls[i];
+            // 사각형 충돌(AABB) 공식을 통해 두 개가 겹치는지 확인
+            if (x < wall.x + wall.w && x + w > wall.x &&
+                currentY < wall.y + wall.h && currentY + h > wall.y) {
+                isOverlapping = true;
+                break;
+            }
+        }
+        if (isOverlapping) {
+            // 겹친다면 위쪽(Y좌표 감소)으로 조금 더 이동시켜 겹침을 해소 시도
+            currentY -= 40;
+            attempts++;
+        }
+    }
+
     walls.push(new Wall(x, currentY, w, h, type));
 
     if (Math.random() < 0.06) {
@@ -646,7 +688,7 @@ function initGame() {
     score = 0;
     cameraY = 0;
     screenShake = 0;
-    fog = { y: ch + 600, speed: 1.2, active: false };
+    fog = { y: ch + 600, speed: 0.6 * GAME_SCALE, active: false }; // 안개 초기 속도 하향 및 스케일 적용
 
     // 우주 배경 입자 초기화
     for (let i = 0; i < 40; i++) stars.push(new Star());
@@ -755,7 +797,7 @@ function update() {
         let diff = (cameraY + ch * 0.4) - slime.y;
         cameraY -= diff;
 
-        let newScore = Math.floor(Math.abs(cameraY) / 10);
+        let newScore = Math.floor(Math.abs(cameraY) / (10 * GAME_SCALE));
         if (newScore > score) {
             score = newScore;
             scoreText.innerText = score;
@@ -768,7 +810,7 @@ function update() {
 
     if (fog.active) {
         fog.y -= fog.speed;
-        fog.speed += 0.0007;
+        fog.speed += 0.0003 * GAME_SCALE; // 시간에 따른 안개 가속도 스케일 적용
         if (fog.y > cameraY + ch + 1200) fog.y = cameraY + ch + 1200;
         if (slime.y > fog.y) gameOver();
     } else {
@@ -846,7 +888,7 @@ function draw() {
     orbs.forEach(o => o.draw(ctx));
     particles.forEach(p => p.draw(ctx));
 
-    // 조준선 (미래적인 점선 UI)
+    // 포물선 조준선 (미래적인 점선 UI)
     if (isDragging && slime.canJump && state === 'PLAYING') {
         let dx = dragStart.x - dragCurrent.x;
         let dy = dragStart.y - dragCurrent.y;
@@ -858,20 +900,36 @@ function draw() {
                 dy = (dy / dist) * MAX_DRAG_DIST;
             }
 
-            ctx.beginPath();
-            ctx.moveTo(slime.x, slime.y);
-            ctx.lineTo(slime.x + dx * 1.5, slime.y + dy * 1.5);
+            // 시뮬레이션용 초기 속도 계산
+            let simVx = Math.max(Math.min(dx * SLING_POWER, MAX_SPEED), -MAX_SPEED);
+            let simVy = Math.max(Math.min(dy * SLING_POWER, MAX_SPEED), -MAX_SPEED);
 
-            ctx.strokeStyle = 'rgba(6, 182, 212, 0.6)'; // Cyan
-            ctx.lineWidth = 3;
-            ctx.setLineDash([8, 8]);
+            let simX = slime.x;
+            let simY = slime.y;
+
+            ctx.beginPath();
+            ctx.moveTo(simX, simY);
+
+            // 포물선 궤적 점선 점찍기 시뮬레이션 루프 (약 20프레임 앞까지)
+            let steps = 25;
+            for (let i = 1; i <= steps; i++) {
+                simVy += GRAVITY; // 시뮬레이션 중력 적용
+                simX += simVx;
+                simY += simVy;
+                ctx.lineTo(simX, simY);
+            }
+
+            ctx.strokeStyle = 'rgba(6, 182, 212, 0.4)'; // Cyan
+            ctx.lineWidth = 2.5;
+            ctx.setLineDash([6, 8]);
             ctx.lineCap = 'round';
             ctx.stroke();
             ctx.setLineDash([]);
 
+            // 궤적의 끝 지점에 표시될 둥근 마커
             ctx.beginPath();
-            ctx.arc(slime.x + dx * 1.5, slime.y + dy * 1.5, 5, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(6, 182, 212, 0.8)';
+            ctx.arc(simX, simY, 4, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(6, 182, 212, 0.6)';
             ctx.fill();
             ctx.shadowBlur = 10;
             ctx.shadowColor = '#06b6d4';
