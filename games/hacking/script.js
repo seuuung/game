@@ -16,13 +16,16 @@ function initBootMenu() {
     print("GNU GRUB  version 2.06 - HARDCORE CTF EDTION", "system");
     print("-----------------------------------------", "system");
     print("시스템 복구 시나리오를 선택하세요:", "system");
-    print("  [1] 시나리오 1: 다중 암호화 해독 (ROT13 + Base64)");
-    print("  [2] 시나리오 2: 해시 크래킹 및 단어 사전 (Wordlist + Salt)");
-    print("  [3] 시나리오 3: 원격 API 침투 및 JWT 위조 (JWT Forgery)");
-    print("  [4] 시나리오 4: SUID 버퍼 오버플로우 (Buffer Overflow)");
-    print("  [5] 랜덤 시나리오 배정 (Random Scenario)");
+    print("  [1] 튜토리얼 1: 숨겨진 파일 찾기 (기초 이동 및 탐색)");
+    print("  [2] 튜토리얼 2: 권한과 비밀번호 (권한 탈취 기초)");
+    print("  [3] 시나리오 1: 다중 암호화 해독 (ROT13 + Base64)");
+    print("  [4] 시나리오 2: 해시 크래킹 및 단어 사전 (Wordlist + Salt)");
+    print("  [5] 시나리오 3: 원격 API 침투 및 JWT 위조 (JWT Forgery)");
+    print("  [6] 시나리오 4: SUID 버퍼 오버플로우 (Buffer Overflow)");
+    print("  [7] 랜덤 시나리오 배정 (Random Scenario)");
     print("-----------------------------------------", "system");
-    promptSpan.innerHTML = "선택 (1-5): ";
+    print("💡 처음이라면 1번부터 차근차근 시작하는 것을 권장합니다.", "success");
+    promptSpan.innerHTML = "선택 (1-7): ";
     cmdInput.type = 'text';
     promptSpan.style.display = 'inline';
 }
@@ -36,7 +39,7 @@ function rot13(str) {
 
 function loadScenario(id) {
     scenarioId = id;
-    if (scenarioId === 5) scenarioId = Math.floor(Math.random() * 4) + 1;
+    if (scenarioId === 7) scenarioId = Math.floor(Math.random() * 6) + 1;
     gameState = 'PLAYING';
     scenarioData = {};
     hintLevel = 0;
@@ -96,10 +99,30 @@ function loadScenario(id) {
         }
     };
 
-    const guideText = "=========================================\n[시스템 사용 가이드]\n💡 `help`: 명령어 목록\n💡 `hint`: 단계별 힌트\n💡 파이프라인('|')과 'grep', 'find'를 활용해 단서를 찾으세요.\n=========================================\n\n";
+    const guideText = "=========================================\n[시스템 사용 가이드]\n💡 `help`: 명령어 목록\n💡 `hint`: 단계별 힌트 (명확한 명령어 가이드 포함)\n💡 파이프라인('|')과 'grep', 'find'를 활용해 단서를 찾으세요.\n=========================================\n\n";
 
-    // 시나리오 1: 다중 인코딩 (Base64 + ROT13)
+    // 튜토리얼 1: 숨겨진 파일 및 단순 읽기
     if (scenarioId === 1) {
+        scenarioData.password = "easyadmin";
+
+        fileSystem.home.guest["readme.txt"] = {
+            _type: "file", perms: "-rw-r--r--", owner: "guest", size: "480", content: guideText + "목표: /sbin/sys_unlock 파일을 실행하여 시스템을 복구하세요.\n\n시스템 관리자가 어디선가 암호를 적어놓고 숨겨두었습니다.\n숨겨진 파일은 보통 파일명 앞에 마침표(.)가 붙어 있습니다. 여러분의 홈 디렉토리 어딘가에 관리자의 비밀번호가 적힌 숨김 파일이 있는지 찾아보세요!"
+        }; fileSystem.home.guest[".secret_note"] = {
+            _type: "file", perms: "-rw-r--r--", owner: "guest", size: "12", content: "admin 계정의 비밀번호는 easyadmin 입니다."
+        };
+    }
+    // 튜토리얼 2: 환경변수와 디렉토리 이동
+    else if (scenarioId === 2) {
+        scenarioData.password = "root2026";
+
+        fileSystem.home.guest["readme.txt"] = {
+            _type: "file", perms: "-rw-r--r--", owner: "guest", size: "480", content: guideText + "목표: /sbin/sys_unlock 파일을 실행하여 시스템을 복구하세요.\n\n이번에는 조금 더 깊이 찾아야 합니다. /etc 디렉토리 어딘가에 시스템 관리자가 설정 파일을 남겨두었습니다. 디렉토리를 이동하며 파일을 뒤져 관리자(admin)의 비밀번호를 획득하세요."
+        }; fileSystem.etc["admin_config.txt"] = {
+            _type: "file", perms: "-rw-r--r--", owner: "root", size: "35", content: "Temporary admin password set to: root2026\nPlease change ASAP."
+        };
+    }
+    // 시나리오 1: 다중 인코딩 (Base64 + ROT13)
+    else if (scenarioId === 3) {
         const secretKey = "SECRETKEY" + Math.floor(Math.random() * 9999);
         scenarioData.password = secretKey;
         // ROT13으로 먼저 변환하고 Base64로 인코딩
@@ -107,19 +130,19 @@ function loadScenario(id) {
         const finalEncrypted = btoa(rot13Key);
 
         fileSystem.home.guest["readme.txt"] = {
-            _type: "file", perms: "-rw-r--r--", owner: "guest", size: "480", content: guideText + "목표: /sbin/sys_unlock 파일을 실행하여 시스템을 복구하세요.\n\n시스템 어딘가에 관리자의 백업된 인증 정보가 숨겨져 있습니다.\n해당 단서를 적절한 도구로 해독하고 관리자 계정('admin')으로 전환해야 합니다.\n\n⚠️ 주의: `hint` 명령어는 정말로 해결 방법이 생각나지 않을 때만 사용하는 최후의 수단입니다. 스스로의 힘으로 풀어내는 것을 권장합니다."
+            _type: "file", perms: "-rw-r--r--", owner: "guest", size: "480", content: guideText + "목표: /sbin/sys_unlock 파일을 실행하여 시스템을 복구하세요.\n\n시스템 어딘가에 관리자의 백업된 인증 정보가 숨겨져 있습니다.\n해당 단서를 적절한 도구로 해독하고 관리자 계정('admin')으로 전환해야 합니다."
         }; fileSystem.var.backups["admin_pass.crypt"] = {
             _type: "file", perms: "-rw-r--r--", owner: "root", size: "44", content: finalEncrypted
         };
     }
     // 시나리오 2: 해시 크래킹 + 워드리스트 + 솔트
-    else if (scenarioId === 2) {
+    else if (scenarioId === 4) {
         const targetPass = "apple123";
         const salt = "XyZ" + Math.floor(Math.random() * 99);
         scenarioData.password = targetPass;
 
         fileSystem.home.guest["readme.txt"] = {
-            _type: "file", perms: "-rw-r--r--", owner: "guest", size: "480", content: guideText + "목표: /sbin/sys_unlock 파일을 실행하여 시스템을 복구하세요.\n\n시스템 임시 폴더 근처에 권한 관리를 위한 주요 백업 파일이 유출되었습니다.\n또한 시스템에 적용된 보안 설정값(Salt) 문서를 찾아, 무차별 대입(Bruteforce) 공격을 통해 관리자 계정('admin') 비밀번호를 알아내야 합니다.\n\n⚠️ 주의: 도저히 감이 잡히지 않을 때만 `hint`를 검색하세요. 먼저 끈질기게 탐색하는 것이 해커의 기본 소양입니다."
+            _type: "file", perms: "-rw-r--r--", owner: "guest", size: "480", content: guideText + "목표: /sbin/sys_unlock 파일을 실행하여 시스템을 복구하세요.\n\n시스템 임시 폴더 근처에 권한 관리를 위한 주요 백업 파일이 유출되었습니다.\n또한 시스템에 적용된 보안 설정값(Salt) 문서를 찾아, 무차별 대입(Bruteforce) 공격을 통해 관리자 계정('admin') 비밀번호를 알아내야 합니다."
         }; fileSystem.tmp["shadow.bak"] = {
             _type: "file", perms: "-rw-r--r--", owner: "root", content: `root:*:18353:7:::\nadmin:$1$${salt}$e2a11ef721d1542d8:18353:7:::\nguest:*:18353:7:::`
         };
@@ -131,14 +154,14 @@ function loadScenario(id) {
         };
     }
     // 시나리오 3: JWT 위조 및 API 침투
-    else if (scenarioId === 3) {
+    else if (scenarioId === 5) {
         const secret = "SUPER_SECRET_" + Math.random().toString(36).substr(2, 5);
         scenarioData.port = Math.floor(8000 + Math.random() * 1000);
         scenarioData.secret = secret;
         scenarioData.oldToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiZ3Vlc3QiLCJyb2xlIjoidXNlciJ9.SIGNATUREDUMMY";
 
         fileSystem.home.guest["readme.txt"] = {
-            _type: "file", perms: "-rw-r--r--", owner: "guest", size: "480", content: guideText + "목표: 서버의 백도어 API를 호출하여 권한을 우회하세요.\n\n현재 로컬 네트워크 상에서 구동 중인 숨겨진 프로세스와 포트를 추적하세요.\n해당 웹 서비스의 취약한 인증 인프라(JWT)의 서명 키를 탈취해 임의의 관리자('admin') 권한을 위조하여 API에 접근해야 합니다.\n\n⚠️ 주의: `hint` 명령어는 플레이어의 재미를 반감시킬 수 있습니다. 진짜 방법이 떠오르지 않는 마지막 스텝에서만 활용하세요."
+            _type: "file", perms: "-rw-r--r--", owner: "guest", size: "480", content: guideText + "목표: 서버의 백도어 API를 호출하여 시스템 권한을 우회하세요.\n\n로컬 네트워크 상의 숨겨진 백그라운드 포트를 추적하고, 취약한 인증(JWT) 관리 서버의 비밀 키를 탈취하세요. 위조된 인증 토큰을 만들어 관리자 권한으로 API에 접근해야 합니다."
         }; fileSystem.opt.api = {
             _type: "dir", perms: "drwxr-xr-x", owner: "root",
             "config.js": { _type: "file", perms: "-rw-r--r--", owner: "root", content: `module.exports = {\n  port: ${scenarioData.port},\n  jwt_secret: '${secret}'\n}` }
@@ -148,9 +171,9 @@ function loadScenario(id) {
         };
     }
     // 시나리오 4: SUID 기반 버퍼 오버플로우
-    else if (scenarioId === 4) {
+    else if (scenarioId === 6) {
         fileSystem.home.guest["readme.txt"] = {
-            _type: "file", perms: "-rw-r--r--", owner: "guest", size: "480", content: guideText + "목표: 시스템의 취약점을 공략하여 root 권한을 탈취 후 /sbin/sys_unlock 실행\n\n시스템에 잘못된 특수 권한이 설정된 채 설치된 프로그램이 존재합니다.\n해당 프로그램 실행 시 메모리 버퍼 오버플로우가 발생할 수 있습니다. 이를 악용하여 일시적으로 최고 관리자(root) 권한에 도달하세요.\n\n⚠️ 주의: 어디서부터 시작해야 할지 전혀 감이 안 올 때만 최후의 수단으로 `hint` 명령어를 사용하시기 바랍니다."
+            _type: "file", perms: "-rw-r--r--", owner: "guest", size: "480", content: guideText + "목표: 시스템의 취약점을 공략하여 root 권한을 탈취 후 /sbin/sys_unlock 실행\n\n시스템에 잘못된 특수 권한이 설정된 채 설치된 프로그램이 존재합니다. 메모리 오버플로우를 발생시켜 최고 관리자(root) 셸을 확보하세요."
         }; fileSystem.usr.bin["vuln_prog"] = {
             _type: "exec", perms: "-rwsr-xr-x", owner: "root", size: "15M", date: "Today 12:00",
             fn: function (args) {
@@ -288,7 +311,8 @@ cmdInput.addEventListener('keydown', function (e) {
 
         if (gameState === 'BOOT_MENU') {
             print(`<div>${promptSpan.innerHTML} ${inputVal}</div>`);
-            if (['1', '2', '3', '4', '5'].includes(inputVal)) {
+
+            if (['0', '1', '2', '3', '4', '5', '6'].includes(inputVal)) { // Updated to include new scenarios 0 and 1
                 loadScenario(parseInt(inputVal));
             } else print("Invalid choice.", "error");
             return;
@@ -300,7 +324,7 @@ cmdInput.addEventListener('keydown', function (e) {
             print(`<div>Password: ********</div>`);
 
             let success = false;
-            if ((scenarioId === 1 || scenarioId === 2) && awaitingPasswordFor === 'admin') {
+            if ((scenarioId === 1 || scenarioId === 2 || scenarioId === 3 || scenarioId === 4) && awaitingPasswordFor === 'admin') {
                 if (inputVal === scenarioData.password) success = true;
             }
 
@@ -390,32 +414,42 @@ function executeCommand(input, pipeInput, printOutput) {
         case 'hint':
             hintLevel++;
             outData = `--- HINT LEVEL ${Math.min(hintLevel, 5)} ---\n`;
-            if (scenarioId === 1) {
-                if (hintLevel === 1) outData += "1. 시스템 백업 디렉토리를 탐색해야 합니다. `ls -la /var/backups` 명령어로 숨겨진 내용을 확인하세요.";
-                else if (hintLevel === 2) outData += "2. `cat /var/backups/admin_pass.crypt` 로 백업 파일 내용을 확인하면 알 수 없는 문자가 나옵니다.\n이는 Base64로 형태가 바뀌었기 원본 내용을 한 번 가렸기 때문입니다.";
-                else if (hintLevel === 3) outData += "3. 파이프 연산자(`|`)를 사용하면 명령어의 결과를 다른 명령어의 입력으로 넘길 수 있습니다.\n`cat /var/backups/admin_pass.crypt | base64 -d` 를 입력해 디코딩하세요.";
-                else if (hintLevel === 4) outData += "4. 디코딩된 문자열이 여전히 이상하다면, 치환 암호인 ROT13이 적용되어 있기 때문입니다.\n이는 알파벳 자체를 13칸 미는 고전적 암호 방식입니다.";
-                else outData += "5. `tr` (문자 변환) 명령어를 사용해 ROT13을 역순환시킬 수 있습니다.\n다음과 같이 파이프를 두 번 구성해 결과를 도출하세요:\n`cat /var/backups/admin_pass.crypt | base64 -d | tr 'A-Za-z' 'N-ZA-Mn-za-m'`\n결과 비밀번호를 기억해 `su admin` 에 로그인하세요.";
-            } else if (scenarioId === 2) {
-                if (hintLevel === 1) outData += "1. `ls /tmp` 를 입력해 임시 폴더에 방치된 `shadow.bak` (비밀번호 권한 파일)을 찾아내세요.";
-                else if (hintLevel === 2) outData += "2. 암호를 해독(크래킹)하려면 사전 파일도 필요합니다. 시스템의 로컬 워드리스트 리소스는 `/usr/share/wordlists/rockyou.txt` 경로에 존재합니다.";
-                else if (hintLevel === 3) outData += "3. 비밀번호에 적용된 해시 난수값(솔트)을 알아내야 합니다.\n`find / -name \".env*\"` 명령어를 통해 환경설정 파일을 탐색해 보세요.";
-                else if (hintLevel === 4) outData += "4. `/opt/.env` 위치에서 솔트 값을 탈취했다면, 이제 `crack` 도구를 활용할 준비가 되었습니다.\n`crack` 활용법 : `crack --salt [솔트] --wordlist [사전파일경로] [해시파일경로]`";
-                else outData += "5. 다음 명령어를 실행하여 섀도우 파일에 포함된 패스워드와 매칭되는 단어를 찾아보세요:\n`crack --salt [솔트값] --wordlist /usr/share/wordlists/rockyou.txt /tmp/shadow.bak`";
-            } else if (scenarioId === 3) {
-                if (hintLevel === 1) outData += "1. 현재 서버에서 돌아가는 백그라운드 서비스의 포트를 찾아야 합니다.\n`netstat -tuln` 명령어를 입력해 LISTEN 포트를 탐색하세요.";
-                else if (hintLevel === 2) outData += "2. 찾으신 포트에 연동된 API 소스 코드가 존재하는 폴더들을 뒤져야합니다. 파일 구조를 파악해 `/opt/api/config.js` 를 찾아 `cat`으로 확인해 시크릿(secret) 토큰을 알아내세요.";
-                else if (hintLevel === 3) outData += "3. 위조 인증 토큰 생성기를 활용해 서버 관리자 계정('admin')으로 둔갑하세요.\n적용 명령어: `jwt-forge --role=admin --secret=[시크릿키]`";
-                else if (hintLevel === 4) outData += "4. 이제 curl 명령어를 사용해 API 타겟 URL로 웹 요청을 수행해야 합니다. 목적지는 `http://127.0.0.1:[확인된포트]/unlock` 입니다.";
-                else outData += "5. curl 요청 시 `-H` (헤더 삽입) 옵션을 통해 방금 만든 JWT 위조 토큰을 권한 정보에 심어 보내야 합니다:\n`curl -H \"Authorization: Bearer [복사해둔새로운토큰]\" http://127.0.0.1:[포트]/unlock`";
-            } else if (scenarioId === 4) {
-                if (hintLevel === 1) outData += "1. 프로그램 강제 권한 탈취를 위해 일반 사용자임에도 관리자의 기능으로 돌아가는 파일(SUID)을 찾아야 합니다.\n`ls -la /usr/bin` 등으로 의심되는 파일을 찾아보세요.";
-                else if (hintLevel === 2) outData += "2. 실행 권한이 `x`가 아닌 `s`로 표시된 `/usr/bin/vuln_prog` 를 발견했다면, 실행해보고 입력을 어떻게 받는지 확인해보세요.";
-                else if (hintLevel === 3) outData += "3. 이 응용 프로그램은 문자 코드를 입력받습니다. 만약 너무 많이 입력하게 되면 어떻게 될까요?\n이를 강하게 밀어 넣었을 때 에러(Segmentation fault)와 함께 오작동을 유도할 수 있습니다.";
-                else if (hintLevel === 4) outData += "4. 터미널 명령줄 한도로 넘어갈 수 있는 매우 많은 문자열을 인자 값으로 넘겨 버퍼 오버플로우를 발생시키세요.\n예시: `/usr/bin/vuln_prog AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA`";
-                else outData += "5. 공격에 성공하면 셸 프롬프트가 `root@linux`로 바뀌게 됩니다.\n이 상황에서 마지막 목표인 `/sbin/sys_unlock` 명령어를 치면 미션을 클리어할 수 있습니다.";
+            if (scenarioId === 1) { // 튜토리얼 1
+                if (hintLevel === 1) outData += "현재 디렉토리에 숨겨진 파일이 있는지 확인하세요.\n명령어: `ls -la`";
+                else if (hintLevel === 2) outData += ".secret_note 라는 파일이 보일 것입니다. 내부에 적힌 글씨를 읽어보세요.\n명령어: `cat .secret_note`";
+                else if (hintLevel === 3) outData += "비밀번호 'easyadmin'을 알아냈습니다. 이제 관리자 권한을 획득해야 합니다.\n명령어: `su admin` 이후 'easyadmin'을 입력하세요.";
+                else outData += "권한을 얻었다면 잠금 해제 스크립트를 실행해 목표를 달성하세요.\n명령어: `/sbin/sys_unlock`";
+            } else if (scenarioId === 2) { // 튜토리얼 2
+                if (hintLevel === 1) outData += "/etc 디렉토리로 이동하여 내부를 살펴보세요.\n명령어: `cd /etc` 이어서 `ls`";
+                else if (hintLevel === 2) outData += "디렉토리 안에 보이는 admin_config.txt 파일의 내용을 읽어 비밀번호를 파악하세요.\n명령어: `cat admin_config.txt`";
+                else if (hintLevel === 3) outData += "비밀번호 'root2026'을 기억하고, 관리자로 전환하세요.\n명령어: `su admin` 이후 'root2026'을 입력하세요.";
+                else outData += "관리자가 되었다면 시스템 복구 스크립트를 실행하세요.\n명령어: `/sbin/sys_unlock`";
+            } else if (scenarioId === 3) { // 시나리오 1
+                if (hintLevel === 1) outData += "시스템 백업 디렉토리가 의심스럽습니다. 디렉토리를 열어 확인하세요.\n명령어: `ls -la /var/backups`";
+                else if (hintLevel === 2) outData += "암호화된 파일(admin_pass.crypt)의 내용을 확인하세요.\n명령어: `cat /var/backups/admin_pass.crypt`";
+                else if (hintLevel === 3) outData += "데이터가 Base64로 인코딩 되어 있습니다. 파이프(|)를 사용해 복호화(디코딩) 하세요.\n명령어: `cat /var/backups/admin_pass.crypt | base64 -d`";
+                else if (hintLevel === 4) outData += "디코딩 결과가 이상한 철자라면 ROT13 암호화가 이중으로 걸려있기 때문입니다. tr 명령어로 다시 문자를 치환하세요.\n명령어: `cat /var/backups/admin_pass.crypt | base64 -d | tr 'A-Za-z' 'N-ZA-Mn-za-m'`";
+                else outData += "이제 올바른 비밀번호를 찾았습니다. su 명령어로 로그인 후 복구를 실행하세요.\n1. `su admin` 입력 후 해독한 비밀번호 입력\n2. `/sbin/sys_unlock` 실행";
+            } else if (scenarioId === 4) { // 시나리오 2
+                if (hintLevel === 1) outData += "임시 폴더(tmp)에 유출된 섀도우 파일을 찾으세요.\n명령어: `ls /tmp`";
+                else if (hintLevel === 2) outData += "해시를 무차별 대입하려면 환경 설정에 들어간 솔트(salt)값을 알아야 합니다. 전체 시스템에서 .env 파일을 검색하세요.\n명령어: `find / -name *.env*`";
+                else if (hintLevel === 3) outData += "검색된 /opt/.env 파일의 내용을 읽어서, 내부의 솔트(HASH_SALT) 값을 알아내 복사해두세요.\n명령어: `cat /opt/.env`";
+                else if (hintLevel === 4) outData += "이제 알아낸 솔트값과 리눅스용 해킹 사전 파일(rockyou)을 결합하여 해시 크랙을 실행하세요.\n명령어: `crack --salt [적혀있던솔트값] --wordlist /usr/share/wordlists/rockyou.txt /tmp/shadow.bak`";
+                else outData += "크랙이 완료되어 [apple123] 이라는 원래 비밀번호가 나왔습니다!\n1. `su admin` 입력 후 apple123 입력\n2. `/sbin/sys_unlock` 실행";
+            } else if (scenarioId === 5) { // 시나리오 3
+                if (hintLevel === 1) outData += "현재 구동 중인 숨겨진 프로세스와 포트를 탐색하세요.\n명령어: `netstat -tuln`";
+                else if (hintLevel === 2) outData += "발견된 백그라운드 포트와 관련된 API 서버 설정 파일을 찾아 시크릿 키를 구하세요.\n/opt/api 디렉토리를 열어보세요. 명령어: `cat /opt/api/config.js`";
+                else if (hintLevel === 3) outData += "설정 파일에서 jwt_secret 문자열을 복사한 뒤, jwt-forge를 이용해 위조된 관리자 토큰을 생성하세요.\n명령어: `jwt-forge --role=admin --secret=[복사한secret키]`";
+                else if (hintLevel === 4) outData += "생성된 토큰을 활용해 방금 1번 힌트에서 알아낸 포트로 curl 통신 요청을 보내 백도어를 승인받아야 합니다.";
+                else outData += "다음 명령어를 입력해서 조작한 헤더 데이터를 함께 전송하세요.\n명령어: `curl -H \"Authorization: Bearer [아까위조한토큰]\" http://127.0.0.1:[확인된포트]/unlock`";
+            } else if (scenarioId === 6) { // 시나리오 4
+                if (hintLevel === 1) outData += "잘못된 권한이 부여된 실행 파일을 찾아야 합니다. 보통 /usr/bin 폴더 안에 있습니다.\n명령어: `ls -la /usr/bin`";
+                else if (hintLevel === 2) outData += "빨간색 표시 등에 's' 권한(SUID)이 들어간 의심스러운 'vuln_prog' 실행 프로그램을 찾았을 것입니다. 일단 문자를 넣어 실행해 보세요.\n명령어: `/usr/bin/vuln_prog test`";
+                else if (hintLevel === 3) outData += "이 프로그램은 문자 입력을 제한 없이 받고 있어서 보안 취약점이 존재합니다. 의도적으로 긴 문자를 입력해 버퍼를 터뜨리세요.";
+                else if (hintLevel === 4) outData += "명령행에 A 글자를 대략 40개 이상 꽉 채워 넣어 프로그램 메모리를 강제로 손상시키세요.\n명령어: `/usr/bin/vuln_prog AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA`";
+                else outData += "성공적으로 프로그램이 오작동하며 root(최고 관리자) 셸이 켜졌습니다. 이제 모든 권한이 허용됩니다.\n마지막 명령어: `/sbin/sys_unlock`";
             }
-            if (hintLevel >= 5) { outData += "\n\n(모든 힌트가 공개되었습니다. 행운을 빕니다!)"; hintLevel = 5; }
+            if (hintLevel >= 5) { outData += "\n\n(모든 힌트가 공개되었습니다. 위 명령어들을 그대로 따라하시면 클리어할 수 있습니다!)"; hintLevel = 5; }
             break;
         case 'reboot':
             print("The system is going down for reboot NOW!", "system");
