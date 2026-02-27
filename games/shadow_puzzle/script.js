@@ -160,6 +160,7 @@ let currentLevelIndex = 0;
 let gameState = 'playing';
 let currentTargetQuaternions = [];
 let activeTargetQuaternion = null;
+let correctStartTime = null;
 
 const canvas = document.getElementById('game-canvas');
 const scene = new THREE.Scene();
@@ -240,11 +241,12 @@ function loadLevel(index) {
     }
 
     gameState = 'playing';
+    correctStartTime = null;
     const levelData = levels[index];
     document.getElementById('level-text').innerText = `레벨 ${index + 1} / ${levels.length}`;
 
     const instruction = document.getElementById('instruction');
-    instruction.innerText = "그림자가 어떤 모양을 숨기고 있을까요?";
+    instruction.innerText = "모양을 맞추고 2초 동안 기다리세요!";
     instruction.className = "pointer-events-auto text-lg text-white/80 animate-pulse transition-all duration-300 bg-black/30 px-6 py-2 rounded-full backdrop-blur-sm shadow-md";
 
     const nextContainer = document.getElementById('next-btn-container');
@@ -357,8 +359,6 @@ window.addEventListener('pointermove', (e) => {
     puzzleGroup.quaternion.premultiply(qTotal);
 
     previousMousePosition = { x: e.clientX, y: e.clientY };
-
-    checkWinCondition();
 });
 
 window.addEventListener('pointerup', () => {
@@ -366,6 +366,8 @@ window.addEventListener('pointerup', () => {
 });
 
 function checkWinCondition() {
+    if (gameState !== 'playing') return;
+
     let maxDot = 0;
     let bestTarget = null;
 
@@ -377,21 +379,33 @@ function checkWinCondition() {
         }
     }
 
-    if (maxDot > 0.985) {
-        gameState = 'snapping';
-        activeTargetQuaternion = bestTarget;
+    // 각도 허용 범위를 더욱 타이트하게 줄였습니다 (0.975).
+    if (maxDot > 0.980) {
+        if (correctStartTime === null) {
+            correctStartTime = Date.now();
+        } else if (Date.now() - correctStartTime >= 2000) {
+            // 2초(2000ms)가 경과하면
+            // 부드러운 자석 애니메이션 연출을 위해 snapping 상태로 전환합니다.
+            gameState = 'snapping';
+            activeTargetQuaternion = bestTarget;
+        }
+    } else {
+        correctStartTime = null;
     }
 }
 
 function animate() {
     requestAnimationFrame(animate);
 
+    checkWinCondition();
+
     if (gameState === 'snapping') {
+        // 부드럽게 정답 각도로 회전 (자석 효과)
         puzzleGroup.quaternion.slerp(activeTargetQuaternion, 0.1);
 
+        // 거의 완벽하게 각도가 맞춰지면 정답 UI 표시
         if (Math.abs(puzzleGroup.quaternion.dot(activeTargetQuaternion)) > 0.999) {
             puzzleGroup.quaternion.copy(activeTargetQuaternion);
-
             gameState = 'success';
 
             const levelName = levels[currentLevelIndex].name;
