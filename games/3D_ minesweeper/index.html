@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>3D 지뢰찾기</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- 시작 및 난이도 선택 메뉴 -->
+    <div id="start-menu-overlay">
+        <div class="glass-panel p-6 sm:p-8 max-w-md w-[90%] flex flex-col gap-3 sm:gap-4 shadow-2xl">
+            <h2
+                class="text-3xl sm:text-4xl font-extrabold text-center text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-teal-300 mb-4 sm:mb-6 drop-shadow-md">
+                3D 지뢰찾기</h2>
+
+            <button id="btn-resume"
+                class="hidden bg-slate-600 hover:bg-slate-500 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-lg active:scale-95 text-sm sm:text-lg mb-2 border border-slate-500">🔙
+                진행 중인 게임으로 돌아가기</button>
+
+            <button
+                class="diff-btn bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-lg active:scale-95 text-sm sm:text-lg"
+                data-size="3" data-mines="3">초급 (3 × 3 × 3, 지뢰 3개)</button>
+            <button
+                class="diff-btn bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-lg active:scale-95 text-sm sm:text-lg"
+                data-size="5" data-mines="15">중급 (5 × 5 × 5, 지뢰 15개)</button>
+            <button
+                class="diff-btn bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-lg active:scale-95 text-sm sm:text-lg"
+                data-size="7" data-mines="50">고급 (7 × 7 × 7, 지뢰 50개)</button>
+
+            <div class="mt-2 sm:mt-4 pt-4 sm:pt-6 border-t border-slate-600">
+                <h3 class="text-base sm:text-xl font-bold text-white mb-2 sm:mb-3">🛠️ 커스텀 설정</h3>
+                <div class="flex gap-3 mb-3 sm:mb-4">
+                    <div class="flex-1">
+                        <label class="block text-xs sm:text-sm text-gray-400 mb-1">크기 (N³)</label>
+                        <input type="number" id="custom-size" value="4" min="2" max="20"
+                            class="w-full bg-slate-800 text-white p-2 rounded-lg border border-slate-500 focus:border-blue-400 focus:outline-none transition-colors text-center text-sm">
+                        <div class="mt-1.5 flex flex-col items-center gap-0.5">
+                            <span class="text-[10px] sm:text-xs text-gray-500 font-medium">(허용 범위: 2 ~ 20)</span>
+                            <span id="custom-total-blocks" class="text-[10px] sm:text-xs text-blue-400 font-medium">(총
+                                64개 블록)</span>
+                        </div>
+                    </div>
+                    <div class="flex-1 relative">
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="block text-xs sm:text-sm text-gray-400">지뢰 개수</label>
+                            <label class="inline-flex items-center cursor-pointer" title="크기에 맞춰 적절한 지뢰 개수를 자동 계산합니다">
+                                <span
+                                    class="mr-1.5 text-[10px] sm:text-xs font-medium text-gray-300 select-none">자동</span>
+                                <input type="checkbox" id="custom-auto-mines" class="sr-only peer">
+                                <div
+                                    class="relative w-9 h-5 bg-slate-600 outline-none rounded-full peer peer-checked:after:translate-x-[110%] sm:peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:shadow-sm after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-500 transition-colors">
+                                </div>
+                            </label>
+                        </div>
+                        <input type="number" id="custom-mines" value="10" min="1"
+                            class="w-full bg-slate-800 text-white p-2 rounded-lg border border-slate-500 focus:border-blue-400 focus:outline-none transition-colors text-center text-sm disabled:opacity-40 disabled:bg-slate-900 disabled:cursor-not-allowed disabled:text-gray-500 disabled:border-slate-700">
+                        <div class="mt-1.5 flex flex-col items-center gap-0.5">
+                            <span id="custom-mines-range" class="text-[10px] sm:text-xs text-gray-500 font-medium">(허용
+                                범위: 1 ~ 62)</span>
+                        </div>
+                    </div>
+                </div>
+                <p id="custom-error" class="text-red-400 text-xs sm:text-sm mb-3 hidden font-medium"></p>
+                <button id="btn-custom-start"
+                    class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-lg active:scale-95 text-base sm:text-lg">커스텀
+                    시작</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 게임 UI 레이어 -->
+    <div id="ui-layer"
+        class="absolute inset-0 pointer-events-none flex flex-col justify-between p-3 sm:p-5 z-10 w-full h-full box-border">
+
+        <!-- 상단 정보 -->
+        <div class="flex justify-between items-start gap-2">
+            <div class="glass-panel p-3 sm:p-5 flex flex-col gap-1 sm:gap-2 flex-shrink min-w-0">
+                <h1
+                    class="text-lg sm:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-teal-300 drop-shadow-sm truncate">
+                    3D 지뢰찾기</h1>
+                <div class="text-sm sm:text-xl mt-0.5 sm:mt-1 whitespace-nowrap">남은 지뢰: <span id="mine-count"
+                        class="font-bold text-red-400 ml-1 drop-shadow-[0_0_5px_rgba(248,113,113,0.8)]">0</span></div>
+                <div class="text-[11px] sm:text-sm text-gray-400 font-medium whitespace-nowrap">격자: <span
+                        id="grid-size-display">-</span></div>
+            </div>
+
+            <div class="glass-panel p-2 sm:p-3 flex flex-col interactive flex-shrink-0 justify-center">
+                <button id="btn-restart"
+                    class="bg-slate-600 hover:bg-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-all shadow-lg active:scale-95 text-[11px] sm:text-sm">⚙️
+                    메뉴로 가기</button>
+            </div>
+        </div>
+
+        <!-- 게임 오버/승리 토스트 메시지 -->
+        <div id="message-modal"
+            class="hidden absolute top-20 left-1/2 transform -translate-x-1/2 glass-panel px-6 py-4 sm:px-8 sm:py-5 text-center interactive shadow-2xl transition-all scale-100 max-w-[90%] sm:max-w-max flex flex-col sm:flex-row items-center gap-3 sm:gap-6 border-t-4 border-t-blue-500 z-50">
+            <div class="text-left">
+                <h2 id="message-title" class="text-2xl sm:text-3xl font-black mb-1 drop-shadow-md">게임 오버!</h2>
+                <p id="message-desc" class="text-sm sm:text-base text-gray-200">지뢰를 건드렸습니다.</p>
+            </div>
+            <button id="btn-modal-restart"
+                class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-5 sm:py-2.5 sm:px-6 rounded-lg text-sm sm:text-base transition-all shadow-[0_0_15px_rgba(37,99,235,0.4)] hover:shadow-[0_0_20px_rgba(37,99,235,0.6)] active:scale-95 whitespace-nowrap">메뉴로
+                돌아가기</button>
+        </div>
+
+        <!-- 하단 컨트롤 (모드 변경 버튼 + 조작 안내) -->
+        <div class="flex flex-col items-center gap-2 mb-1 sm:mb-4 pointer-events-none w-full">
+            <!-- 모드 변경 버튼 (하단 중앙) -->
+            <div class="glass-panel p-1.5 sm:p-2.5 flex gap-1.5 sm:gap-2 interactive w-[90%] sm:w-[450px] max-w-full">
+                <button id="btn-mode-dig"
+                    class="flex-1 bg-blue-600 text-white font-bold py-2 sm:py-3 rounded-lg transition-all shadow-md border-2 border-blue-300 text-xs sm:text-base px-0 whitespace-nowrap">⛏️
+                    파기</button>
+                <button id="btn-mode-flag"
+                    class="flex-1 bg-slate-700 text-gray-400 font-bold py-2 sm:py-3 rounded-lg transition-all shadow-md border-2 border-transparent text-xs sm:text-base px-0 whitespace-nowrap">🚩
+                    깃발</button>
+                <button id="btn-mode-highlight"
+                    class="flex-1 bg-slate-700 text-gray-400 font-bold py-2 sm:py-3 rounded-lg transition-all shadow-md border-2 border-transparent text-xs sm:text-base px-0 whitespace-nowrap">🔍
+                    탐색</button>
+            </div>
+
+            <!-- 하단 조작 안내 -->
+            <div
+                class="flex flex-wrap justify-center items-center gap-x-3 gap-y-1 text-gray-300 text-[11px] sm:text-sm glass-panel px-4 py-2 sm:px-6 sm:py-3 mx-auto max-w-[95%] sm:max-w-max font-medium tracking-wide">
+                <span class="whitespace-nowrap">🖱️ 드래그/핀치: <span class="text-white">시점 조절</span></span>
+                <span class="hidden sm:inline text-gray-500">|</span>
+                <span class="whitespace-nowrap">👆 터치: <span class="text-white">선택 모드 실행</span></span>
+                <span class="hidden sm:inline text-gray-500">|</span>
+                <span class="whitespace-nowrap">🔍 탐색(숫자 꾹): <span class="text-white">주변 블록 확인</span></span>
+                <span class="hidden sm:inline text-gray-500">|</span>
+                <span class="whitespace-nowrap">💻 PC: <span class="text-white">우클릭(깃발)</span></span>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
