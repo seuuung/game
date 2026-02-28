@@ -1,14 +1,44 @@
-/* 모바일 터치 액션 및 드래그/선택 방지 */
+/* 전역 초기화 및 기본 변수 설정 */
+:root {
+    /* 배경 및 유리 효과를 위한 컬러/그래디언트 변수 */
+    --bg-main: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+    --bg-glass: rgba(30, 41, 59, 0.7);
+    --border-glass: rgba(255, 255, 255, 0.1);
+    --shadow-main: 0 8px 32px rgba(0, 0, 0, 0.5);
+
+    /* 주요 포인트 컬러 */
+    --primary: #3b82f6;
+    --emerald-500: #10b981;
+    --blue-500: #3b82f6;
+    --red-500: #ef4444;
+    --purple-500: #8b5cf6;
+    --slate-600: #475569;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
 body {
     margin: 0;
     overflow: hidden;
-    background: radial-gradient(circle at center, #334155 0%, #0f172a 100%);
+    /* 화면 스크롤 방지 */
+    background: var(--bg-main);
     color: white;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     touch-action: none;
+    /* 브라우저 기본 터치 액션(줌 등) 비활성화 */
     user-select: none;
+    /* 텍스트 선택 방지 */
     -webkit-user-select: none;
     -webkit-touch-callout: none;
+    /* 모바일 브라우저 꾹 누르기 메뉴 방지 */
+    -webkit-tap-highlight-color: transparent;
+    /* 터치 시 파란 네모 깜빡임 방지 */
+    height: 100vh;
+    width: 100vw;
 }
 
 canvas {
@@ -16,28 +46,536 @@ canvas {
     outline: none;
 }
 
-.glass-panel {
-    background: rgba(30, 41, 59, 0.65);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 1rem;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+/* 📜 커스텀 스크롤바 디자인 (브라우저 기본 투박한 스크롤바 덮어쓰기) */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
 }
 
+::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+/* Firefox 스크롤바 디자인 지원 */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) rgba(0, 0, 0, 0.2);
+}
+
+/* Glassmorphism(유리 효과) 패널 스타일 */
+.glass-panel {
+    background: var(--bg-glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-glass);
+    border-radius: 1.25rem;
+    box-shadow: var(--shadow-main);
+}
+
+/* UI 요소 중 클릭 가능하도록 설정하는 클래스 (pointer-events 제어) */
 .interactive {
     pointer-events: auto;
 }
 
-/* 시작 메뉴 오버레이 */
-#start-menu-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(15, 23, 42, 0.85);
-    backdrop-filter: blur(8px);
-    z-index: 50;
+/* 레이아웃 헬퍼 클래스 (Flexbox) */
+.flex {
+    display: flex;
+}
+
+.flex-col {
+    flex-direction: column;
+}
+
+.items-center {
+    align-items: center;
+}
+
+.justify-between {
+    justify-content: space-between;
+}
+
+.justify-center {
+    justify-content: center;
+}
+
+.gap-2 {
+    gap: 0.5rem;
+}
+
+.gap-4 {
+    gap: 1rem;
+}
+
+.w-full {
+    width: 100%;
+}
+
+/* 텍스트 그라데이션 및 특징적인 서체 스타일 */
+.text-gradient {
+    background: linear-gradient(to right, #60a5fa, #5eead4);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.font-black {
+    font-weight: 900;
+}
+
+.font-bold {
+    font-weight: 700;
+}
+
+.text-center {
+    text-align: center;
+}
+
+/* 공통 버튼 스타일 */
+.btn {
+    border: none;
+    border-radius: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     justify-content: center;
-    pointer-events: auto;
+    text-decoration: none;
+    color: white;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.btn:active {
+    transform: scale(0.96);
+    /* 클릭 시 살짝 눌리는 효과 */
+}
+
+.btn:hover {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+}
+
+/* 버튼 컬러별 변형 */
+.btn-emerald {
+    background: var(--emerald-500);
+}
+
+.btn-blue {
+    background: var(--blue-500);
+}
+
+.btn-red {
+    background: var(--red-500);
+}
+
+.btn-purple {
+    background: var(--purple-500);
+}
+
+.btn-slate {
+    background: var(--slate-600);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* 입력 필드 스타일 */
+.input-field {
+    background: #1e293b;
+    border: 1px solid #475569;
+    color: white;
+    padding: 0.6rem;
+    border-radius: 0.5rem;
+    text-align: center;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.input-field:focus {
+    border-color: #3b82f6;
+}
+
+.input-field:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* 시작 메뉴 및 오버레이 설정 */
+#start-menu-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(10px);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.menu-content {
+    width: 90%;
+    max-width: 420px;
+    max-height: 90vh;
+    /* 화면을 벗어나지 않도록 최대 높이 제한 */
+    padding: 2rem;
+    overflow-y: auto;
+    /* 내용이 많을 시 스크롤 활성화 */
+}
+
+/* 게임 플레이 UI 레이어 배치 */
+#ui-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    /* 기본적으로 뒷면 3D 캔버스 조작 방해 금지 */
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    z-index: 10;
+}
+
+.hud-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.hud-bottom {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+/* 메시지 알림(모달/토스트) 스타일 */
+#message-modal {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 360px;
+    padding: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    border-top: 4px solid var(--blue-500);
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* 🎚️ 커스텀 Range 슬라이더 스타일 */
+.custom-range {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    background: transparent;
+    margin: 8px 0;
+}
+
+.custom-range:focus {
+    outline: none;
+}
+
+/* 트랙(Track) 디자인 */
+.custom-range::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 8px;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.custom-range:focus::-webkit-slider-runnable-track {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.custom-range::-moz-range-track {
+    width: 100%;
+    height: 8px;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* 썸(Thumb) 손잡이 디자인: 유리 구슬 느낌 */
+.custom-range::-webkit-slider-thumb {
+    height: 22px;
+    width: 22px;
+    border-radius: 50%;
+    background: var(--primary);
+    cursor: pointer;
+    -webkit-appearance: none;
+    margin-top: -8px;
+    /* 트랙 중앙 정렬 */
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    transition: transform 0.1s, background 0.2s, box-shadow 0.2s;
+}
+
+.custom-range::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+    background: #60a5fa;
+    box-shadow: 0 4px 10px rgba(96, 165, 250, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.6);
+}
+
+.custom-range::-moz-range-thumb {
+    height: 22px;
+    width: 22px;
+    border-radius: 50%;
+    background: var(--primary);
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    transition: transform 0.1s, background 0.2s, box-shadow 0.2s;
+}
+
+.custom-range::-moz-range-thumb:hover {
+    transform: scale(1.15);
+    background: #60a5fa;
+    box-shadow: 0 4px 10px rgba(96, 165, 250, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.6);
+}
+
+/* 비활성화 상태 Range */
+.custom-range:disabled::-webkit-slider-thumb {
+    background: #475569;
+    background-image: none;
+    cursor: not-allowed;
+    box-shadow: none;
+    border-color: transparent;
+    transform: scale(1);
+}
+
+.custom-range:disabled::-moz-range-thumb {
+    background: #475569;
+    background-image: none;
+    cursor: not-allowed;
+    box-shadow: none;
+    border-color: transparent;
+    transform: scale(1);
+}
+
+/* 🔘 커스텀 설정용 토글 스위치 스타일 */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: .4s;
+    border-radius: 24px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 2px;
+    bottom: 2px;
+    background-color: #94a3b8;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+    transition: .4s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 50%;
+}
+
+input:checked+.slider {
+    background-color: var(--purple-500);
+    border-color: #d8b4fe;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3), 0 0 8px rgba(168, 85, 247, 0.4);
+}
+
+input:checked+.slider:before {
+    transform: translateX(20px);
+    background-color: white;
+}
+
+/* 모바일 화면 대응 (반응형) */
+@media (max-width: 640px) {
+    .menu-content {
+        padding: 1.5rem;
+    }
+
+    #ui-layer {
+        padding: 0.5rem;
+        /* 화면 여백 최소화 */
+    }
+
+    .hud-top .glass-panel {
+        padding: 0.75rem !important;
+        /* 상단 정보창 여백 축소 */
+    }
+
+    .hud-top h1 {
+        font-size: 1.25rem !important;
+        /* 타이틀 폰트 좀 더 작게 */
+    }
+
+    .hud-bottom .glass-panel {
+        padding: 0.25rem 0.5rem !important;
+        width: 100% !important;
+        /* 가로폭 거의 꽉 차게 */
+    }
+
+    .mode-btn {
+        padding: 0.5rem 0.1rem !important;
+        /* 버튼 안쪽 여백 최소화 (5개가 한줄에 들어가도록) */
+        font-size: 0.75rem !important;
+        /* 글자 크기 축소 */
+        border-radius: 0.5rem !important;
+    }
+
+    .hud-bottom>div:last-child {
+        padding: 0.5rem !important;
+        /* 가이드 바깥 여백 축소 */
+        font-size: 0.7rem !important;
+        /* 가이드 폰트 사이즈 더 작게 */
+    }
+}
+
+/* --- 3D 지뢰찾기 전용 조작 모드 버튼 디자인 --- */
+
+.mode-btn {
+    flex: 1;
+    background: #334155;
+    color: #94a3b8;
+    font-weight: 700;
+    padding: 0.75rem 0.25rem;
+    border-radius: 0.75rem;
+    border: 2px solid transparent;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    font-size: 0.875rem;
+    white-space: nowrap;
+    opacity: 0.8;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.mode-btn:hover {
+    background: #475569;
+    opacity: 1;
+}
+
+/* 활성화된 모드별 강조 효과 */
+.mode-btn.active-pan {
+    background: #14b8a6;
+    /* 에메랄드(청록)색 */
+    color: white;
+    border-color: #5eead4;
+    transform: scale(1.05);
+    opacity: 1;
+    z-index: 2;
+    box-shadow: 0 4px 12px rgba(20, 184, 166, 0.4);
+}
+
+.mode-btn.active-dig {
+    background: #3b82f6;
+    color: white;
+    border-color: #93c5fd;
+    transform: scale(1.05);
+    /* 현재 선택된 모드를 살짝 크게 표시 */
+    opacity: 1;
+    z-index: 2;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.mode-btn.active-flag {
+    background: #eab308;
+    color: #422006;
+    border-color: #fef08a;
+    transform: scale(1.05);
+    opacity: 1;
+    z-index: 2;
+    box-shadow: 0 4px 12px rgba(234, 179, 8, 0.4);
+}
+
+.mode-btn.active-highlight {
+    background: #a855f7;
+    color: white;
+    border-color: #d8b4fe;
+    transform: scale(1.05);
+    opacity: 1;
+    z-index: 2;
+    box-shadow: 0 4px 12px rgba(168, 85, 247, 0.4);
+}
+
+.mode-btn.active-chord {
+    background: #f97316;
+    color: white;
+    border-color: #fed7aa;
+    transform: scale(1.05);
+    opacity: 1;
+    z-index: 2;
+    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
+}
+
+/* 승리/패배 상태별 메시지 스타일 변형 */
+#message-modal.toast-won {
+    border-top: 4px solid #4ade80;
+    box-shadow: 0 0 20px rgba(74, 222, 128, 0.3);
+}
+
+#message-modal.toast-lost {
+    border-top: 4px solid #f87171;
+    box-shadow: 0 0 20px rgba(248, 113, 113, 0.3);
+}
+
+.status-won {
+    color: #4ade80 !important;
+    filter: drop-shadow(0 0 5px rgba(74, 222, 128, 0.5));
+}
+
+.status-lost {
+    color: #f87171 !important;
+    filter: drop-shadow(0 0 5px rgba(248, 113, 113, 0.5));
+}
+
+/* 유틸리티 컬러 클래스 */
+.text-red-400 {
+    color: #f87171 !important;
+}
+
+.text-gray-400 {
+    color: #94a3b8 !important;
+}
+
+.text-blue-400 {
+    color: #60a5fa !important;
 }
