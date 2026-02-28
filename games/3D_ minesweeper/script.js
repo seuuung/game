@@ -21,7 +21,8 @@ const STATE = {
     minesLeft: 0,       // HUD에 표시될 남은 지뢰 개수 (깃발 수에 따라 변함)
     hoveredCell: null,  // 마우스/터치가 올려진 현재 셀
     highlightedCells: [], // 강조(투시) 모드에서 밝게 표시된 셀 목록
-    activeSprite: null   // 현재 상호작용 중인 숫자(Sprite) 객체
+    activeSprite: null,  // 현재 상호작용 중인 숫자(Sprite) 객체 (단일)
+    highlightedSprites: [] // 탐색 롱프레스 시 다중으로 강조된 숫자(Sprite) 객체 배열
 };
 
 // --- Three.js 초기 설정 (Three.js Setup) ---
@@ -37,12 +38,54 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap; // 부드러운 그림자 설정
 document.body.appendChild(renderer.domElement);
 
-// 시점 조작(OrbitControls) 설정
-const controls = new THREE.OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true; // 부드러운 회전 효과
-controls.dampingFactor = 0.05;
-controls.minDistance = CONFIG.gridSize * 0.8;
-controls.maxDistance = CONFIG.gridSize * 3.5;
+// 💡 커스텀 카메라 컨트롤 상태 (OrbitControls 대체 - 순수 Quaternion 기반)
+const CAM_STATE = {
+    target: new THREE.Vector3(),
+    distance: 15,
+
+    minDistance: 5,
+    maxDistance: 50
+};
+
+/**
+ * 💡 카메라를 타겟 주위로 Quaternion 회전시킵니다.
+ * Spherical 좌표계를 사용하지 않아 극점 제한이 없습니다.
+ */
+function applyCameraRotation(deltaTheta, deltaPhi) {
+    const offset = camera.position.clone().sub(CAM_STATE.target);
+
+    // 좌우 회전: 월드 Y축 기준 (카메라가 뒤집힌 경우 방향 보정)
+    const ySign = camera.up.y >= 0 ? 1 : -1;
+    const quatY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), deltaTheta * ySign);
+    offset.applyQuaternion(quatY);
+    camera.up.applyQuaternion(quatY);
+
+    // 상하 회전: 카메라의 로컬 Right 축 기준
+    const right = new THREE.Vector3().crossVectors(camera.up, offset).normalize();
+    const quatX = new THREE.Quaternion().setFromAxisAngle(right, deltaPhi);
+    offset.applyQuaternion(quatX);
+    camera.up.applyQuaternion(quatX);
+
+    camera.position.copy(CAM_STATE.target).add(offset);
+    camera.lookAt(CAM_STATE.target);
+}
+
+/**
+ * 카메라를 초기 위치로 재설정합니다. (Spherical 변환 없이 직접 포지션 설정)
+ */
+function resetCamera(center, distance) {
+    CAM_STATE.target.copy(center);
+    CAM_STATE.distance = distance;
+
+    // 대각선 위쪽에서 아래를 내려다보는 초기 시점
+    camera.position.set(
+        center.x + distance * 0.5,
+        center.y + distance * 0.6,
+        center.z + distance * 0.7
+    );
+    camera.up.set(0, 1, 0);
+    camera.lookAt(CAM_STATE.target);
+}
 
 // 조명(Lighting) 설정
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.65); // 전체적으로 밝혀주는 은은한 빛
@@ -134,7 +177,7 @@ const edgesGeo = new THREE.EdgesGeometry(blockGeo);
 const sharedGeometries = new Set([blockGeo, edgesGeo]);
 
 // UI Elements (DOMContentLoaded 이후에 초기화해야 하므로 let으로 선언)
-let elMineCount, elGridDisplay, btnModeDig, btnModeFlag, btnModeHighlight, btnModeChord, btnModePan, btnResume, modal, modalTitle, modalDesc, startMenuOverlay, gameHelpOverlay;
+let elMineCount, elGridDisplay, btnModeDig, btnModeFlag, btnModeHighlight, btnModeChord, btnModePan, btnResume, modal, modalTitle, modalDesc, startMenuOverlay, gameHelpOverlay, elModeDesc;
 
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -151,6 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
     modalDesc = document.getElementById('message-desc');
     startMenuOverlay = document.getElementById('start-menu-overlay');
     gameHelpOverlay = document.getElementById('game-help-overlay');
+    elModeDesc = document.getElementById('mode-desc-text'); // 💡 하단 동적 설명 컴포넌트 추가
     const btnModalReview = document.getElementById('btn-modal-review'); // 💡 복기 버튼 변수 추가
 
 
@@ -182,16 +226,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
-    // 💡 각 모드 버튼 클릭 시 다른 모드 해제 및 상태 변경
+    // 💡 각 모드 버튼 클릭 시 상태 변경 (탐색/연쇄 선택은 유지됨 — 사용자가 직접 해제할 때만 초기화)
     btnModeDig.addEventListener('click', () => {
         STATE.currentMode = 'dig';
-        clearHighlight(); // 모드 변경 시 강조 초기화
         updateUI();
     });
 
     btnModeFlag.addEventListener('click', () => {
         STATE.currentMode = 'flag';
-        clearHighlight();
         updateUI();
     });
 
@@ -202,23 +244,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     btnModePan.addEventListener('click', () => {
         STATE.currentMode = 'pan';
-        clearHighlight();
+        // 💡 이동 모드로 전환해도 탐색/연쇄 선택은 유지
         updateUI();
     });
 
     btnRecenter.addEventListener('click', () => {
-        // 카메라의 바라보는 타겟(중심축)을 다시 0,0,0으로 강제 초기화
-        controls.target.set(0, 0, 0);
-        // 격자 크기에 맞춰 초기 카메라 거리(확대/축소)와 고도 재조정
-        const dist = CONFIG.gridSize * 2.2;
-        camera.position.set(dist, dist, dist);
-        controls.update();
+        // 💡 큐브의 실제 중심 좌표를 계산하여 회전 타겟(pivot)으로 설정
+        const size = CONFIG.gridSize;
+        const center = (size - 1) * CONFIG.spacing / 2;
+        const centerVec = new THREE.Vector3(center, center, center);
+        resetCamera(centerVec, size * 2.5);
     });
 
     btnModeChord = document.getElementById('btn-mode-chord');
     btnModeChord.addEventListener('click', () => {
         STATE.currentMode = 'chord';
-        clearHighlight();
+        // 💡 연쇄 모드로 전환 시 탐색에서 선택한 블록이 그대로 연동됨 (꾹 누르면 즉시 연쇄 파기 가능)
         updateUI();
     });
 
@@ -372,10 +413,19 @@ document.addEventListener('DOMContentLoaded', () => {
             STATE.highlightedCells = [];
             cellsToUpdate.forEach(n => updateCellMaterial(n));
         }
-        // 💡 강조되었던 숫자가 있다면 원래 크기로 복구
+        // 💡 강조되었던 단일 숫자(Sprite)가 있다면 원래 크기 및 색상으로 복구
         if (STATE.activeSprite) {
             STATE.activeSprite.scale.set(1.0, 1.0, 1.0);
+            STATE.activeSprite.material.color.setHex(0xffffff);
             STATE.activeSprite = null;
+        }
+        // 💡 롱프레스로 다중 강조되었던 숫자(Sprite) 배열 복구
+        if (STATE.highlightedSprites && STATE.highlightedSprites.length > 0) {
+            STATE.highlightedSprites.forEach(s => {
+                s.scale.set(1.0, 1.0, 1.0);
+                s.material.color.setHex(0xffffff);
+            });
+            STATE.highlightedSprites = [];
         }
     }
 
@@ -388,6 +438,7 @@ document.addEventListener('DOMContentLoaded', () => {
         clearHighlight();
         STATE.activeSprite = sprite;
         sprite.scale.set(CONFIG.highlightScale, CONFIG.highlightScale, CONFIG.highlightScale);
+        sprite.material.color.setHex(0xd8b4fe); // 💡 기본색에 보라색(퍼플 틴트) 혼합
         const cell = sprite.userData.cell;
         const neighbors = getNeighbors(cell);
         STATE.highlightedCells = neighbors.filter(n => n.state === 'hidden' || n.state === 'flagged' || n.isMine);
@@ -408,15 +459,12 @@ document.addEventListener('DOMContentLoaded', () => {
         dirLight.shadow.camera.bottom = -d;
         dirLight.shadow.camera.updateProjectionMatrix();
 
-        controls.minDistance = size * 0.8;
-        controls.maxDistance = size * 3.5;
+        CAM_STATE.minDistance = size * 0.8;
+        CAM_STATE.maxDistance = size * 3.5;
 
-        camera.position.set(size * 1.6, size * 1.3, size * 2.2);
-        controls.target.set(
-            (size - 1) * CONFIG.spacing / 2,
-            (size - 1) * CONFIG.spacing / 2,
-            (size - 1) * CONFIG.spacing / 2
-        );
+        const center = (size - 1) * CONFIG.spacing / 2;
+        const centerVec = new THREE.Vector3(center, center, center);
+        resetCamera(centerVec, size * 2.5);
 
         startMenuOverlay.style.display = 'none';
         elGridDisplay.textContent = `${size} × ${size} × ${size}`;
@@ -652,6 +700,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const sprite = createTextSprite(cell.neighborMines);
                 sprite.position.copy(cell.mesh.position);
                 sprite.userData = { cell: cell };
+                cell.sprite = sprite; // 💡 O(1) 역참조: cell을 통해 언제든 sprite 접근 가능
                 gridGroup.add(sprite);
             } else {
                 // 인접 지뢰가 없는 빈 칸(0)이면 주변 26개 칸을 모두 큐에 추가 (BFS 연쇄 오픈)
@@ -787,14 +836,15 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (STATE.currentMode === 'chord') btnModeChord.classList.add('active-chord');
         else if (STATE.currentMode === 'pan') btnModePan.classList.add('active-pan'); // 💡 판(Pan) 모드 시각적 활성화
 
-        // 💡 이동(Pan) 모드일 땐 마우스/터치 기본 조작 방향을 회전에서 -> 평행이동으로 제어권 변경
-        if (STATE.currentMode === 'pan') {
-            controls.mouseButtons.LEFT = THREE.MOUSE.PAN;
-            controls.touches.ONE = THREE.TOUCH.PAN;
-        } else {
-            // 그 외(파기, 깃발 등)의 일반 모드일 때는 화면 회전용으로 원복
-            controls.mouseButtons.LEFT = THREE.MOUSE.ROTATE;
-            controls.touches.ONE = THREE.TOUCH.ROTATE;
+        // 💡 이동(Pan) 모드는 커스텀 카메라 시스템에서 pointermove 이벤트 내에서 직접 처리됨
+
+        // 💡 하단 모드 가이드 설명 동적 갱신
+        if (elModeDesc) {
+            if (STATE.currentMode === 'dig') elModeDesc.innerHTML = '⛏️ <b>파기</b>: 안전하다고 확신하는 의심 없는 블록을 터치해 까냅니다.';
+            else if (STATE.currentMode === 'flag') elModeDesc.innerHTML = '🚩 <b>깃발</b>: 지뢰가 의심되는 곳에 깃발을 꽂아 표시합니다.';
+            else if (STATE.currentMode === 'pan') elModeDesc.innerHTML = '✋ <b>이동</b>: 화면을 <b>상하좌우로 끌어서 이동</b>하는 안전한 관찰 모드입니다.';
+            else if (STATE.currentMode === 'highlight') elModeDesc.innerHTML = '🔍 <b>탐색</b>: 숫자(클릭) → 주변 블록 표시, 안 풀린 블록(꾹 누르기) → 주변 숫자 표시';
+            else if (STATE.currentMode === 'chord') elModeDesc.innerHTML = '⚡ <b>연쇄 파기</b>: "숫자=주변 깃발 수"일 때 <b>숫자를 선택(터치) 후 0.3초간 꾹 누르면</b> 나머지를 팝니다!';
         }
     }
 
@@ -807,6 +857,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let isLongPressing = false;
     let activePointers = 0;
     let isMultiTouch = false;
+    let pointerCache = []; // 멀티터치(핀치 줌) 포인터 추적용
+    let prevPinchDist = -1;
+    let mouseDown = false;    // 💡 마우스/터치 누름 상태 추적 (관성 처리용)
+    let isDragging = false;   // 💡 드래그 중 여부
+    let lastPosX = 0;         // 💡 마지막 포인터 X 위치
+    let lastPosY = 0;         // 💡 마지막 포인터 Y 위치
 
     // 우클릭 시 브라우저 기본 컨텍스트 메뉴 차단
     document.addEventListener('contextmenu', e => e.preventDefault());
@@ -842,13 +898,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     // 한번에 파기(Chord) 또는 강조(Highlight) 모드 처리
                     if (STATE.currentMode === 'chord' || STATE.currentMode === 'highlight') {
-                        // 같은 숫자를 다시 클릭한 경우: 파기 수행 또는 강조 해제
+                        // 같은 숫자를 다시 클릭한 경우: 파기 수행 대신 선택 해제 (꾹 누르기 방식으로 전환됨)
                         if (selectedSprite === STATE.activeSprite) {
-                            if (STATE.currentMode === 'chord') {
-                                performChording(cell);
-                            } else {
-                                clearHighlight();
-                            }
+                            clearHighlight();
                             return;
                         }
 
@@ -894,34 +946,96 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     renderer.domElement.addEventListener('pointerdown', (e) => {
-        activePointers++;
+        pointerCache.push({ id: e.pointerId, x: e.clientX, y: e.clientY });
+        activePointers = pointerCache.length;
         if (activePointers > 1) isMultiTouch = true; // 멀티터치 감지 (확대/축소 시 조작 차단용)
+        mouseDown = true;     // 💡 마우스 누름 상태 활성화
+        isDragging = false;
+        lastPosX = e.clientX;
+        lastPosY = e.clientY;
 
         if (STATE.status !== 'playing' && STATE.status !== 'review') return;
         mouseDownPos = { x: e.clientX, y: e.clientY };
         isLongPressing = false;
 
-        // 💡 꾹 누르기(Long Press) 탐색 지원: 0.3초간 누르고 있으면 주변 블록 강조
-        // 파기(dig) 모드에서는 즉각적인 피드백을 위해 꾹 누르기 기능을 비활성화함
-        if (STATE.currentMode !== 'highlight' && STATE.currentMode !== 'dig') {
+        // 💡 꾹 누르기(Long Press) 탐색 및 연쇄 지원: 0.3초간 누르고 있으면 액션 발동
+        // 파기(dig) 모드에서는 즉각적인 피드백을 위해 꾹 누르기 기능을 비활성화함 (나머지는 허용)
+        if (STATE.currentMode !== 'dig') {
             longPressTimer = setTimeout(() => {
                 isLongPressing = true;
+
+                // 💡 [연쇄 방식 변경] 겹쳐있는 블록 구분을 위해, 이미 선택된 숫자(activeSprite)가 있을 시 꾹 누르면 그 숫자 기준으로 연쇄 폭파 실행
+                if (STATE.currentMode === 'chord' && STATE.activeSprite) {
+                    performChording(STATE.activeSprite.userData.cell);
+                    clearHighlight();
+                    return; // 추가적인 레이캐스팅 무시
+                }
+
                 mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
                 mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
                 raycaster.setFromCamera(mouse, camera);
 
-                let spriteIntersects = raycaster.intersectObjects(gridGroup.children, false).filter(hit => hit.object.type === 'Sprite');
+                if (STATE.currentMode === 'highlight') {
+                    // 💡 탐색 모드 롱프레스: 숫자 뒤에 위치한 블록이라도 명확하게 찾아서 선택 우선순위를 부여함
+                    let intersects = raycaster.intersectObjects(gridGroup.children, false);
+                    let targetBlockHit = null;
+                    let targetSpriteHit = null;
 
-                // 💡 이미 강조된 숫자를 관통하여 뒤의 객체를 잡지 못하게 방지
-                if (spriteIntersects.length > 1 && spriteIntersects[0].object === STATE.activeSprite) {
-                    spriteIntersects.shift();
-                }
+                    // 레이캐스팅된 모든 객체 중, 가장 가까운 유효 타겟(안 풀린 블럭 / 숫자)을 각각 탐색
+                    for (let hit of intersects) {
+                        if (!targetBlockHit && hit.object.type === 'Mesh') {
+                            const c = hit.object.userData.cell;
+                            // 이미 파인(revealed) 블록의 Mesh가 잡히더라도 무시하고 뒤쪽의 안 풀린 블록(hidden/flagged)을 찾음
+                            if (c && (c.state === 'hidden' || c.state === 'flagged')) {
+                                targetBlockHit = hit;
+                            }
+                        }
+                        if (!targetSpriteHit && hit.object.type === 'Sprite') {
+                            // 이미 선택된 숫자를 한 번 더 잡는 것은 무시
+                            if (hit.object !== STATE.activeSprite) {
+                                targetSpriteHit = hit;
+                            }
+                        }
+                    }
 
-                if (spriteIntersects.length > 0) {
-                    const sprite = spriteIntersects[0].object;
-                    if (sprite.userData && sprite.userData.cell) {
-                        // 💡 공통 강조 함수로 중복 로직 제거
-                        highlightNeighbors(sprite);
+                    // 💡 판단: 숫자가 앞에 있더라도 안 풀린 블록이 같이 감지되면 블록을 무조건 우선 선택("숫자 무시하고 블럭 선택")
+                    if (targetBlockHit) {
+                        const cell = targetBlockHit.object.userData.cell;
+                        clearHighlight();
+                        const neighbors = getNeighbors(cell);
+                        const numberNeighbors = neighbors.filter(n => n.state === 'revealed' && n.neighborMines > 0 && n.sprite);
+
+                        STATE.highlightedSprites = [];
+                        numberNeighbors.forEach(n => {
+                            n.sprite.scale.set(CONFIG.highlightScale, CONFIG.highlightScale, CONFIG.highlightScale);
+                            n.sprite.material.color.setHex(0xd8b4fe); // 퍼플 틴트
+                            STATE.highlightedSprites.push(n.sprite);
+                        });
+
+                        // 💡 선택된 기준(안 풀린 블록) 시각적 하이라이트 적용
+                        STATE.highlightedCells = [cell];
+                        updateCellMaterial(cell);
+                    } else if (targetSpriteHit) {
+                        // 허공이나 풀린 블록 허점 클릭 방지, 만약 숫자만 덩그러니 있다면 숫자 롱프레스도 일반 터치처럼 지원
+                        const sprite = targetSpriteHit.object;
+                        if (sprite.userData && sprite.userData.cell) {
+                            highlightNeighbors(sprite);
+                        }
+                    }
+                } else {
+                    // 기본 로직: (Flag, Pan, Chord 모드) 숫자 스프라이트에 레이캐스팅
+                    let spriteIntersects = raycaster.intersectObjects(gridGroup.children, false).filter(hit => hit.object.type === 'Sprite');
+
+                    // 💡 이미 강조된 숫자를 관통하여 뒤의 객체를 잡지 못하게 방지
+                    if (spriteIntersects.length > 1 && spriteIntersects[0].object === STATE.activeSprite) {
+                        spriteIntersects.shift();
+                    }
+
+                    if (spriteIntersects.length > 0) {
+                        const sprite = spriteIntersects[0].object;
+                        if (sprite.userData && sprite.userData.cell) {
+                            highlightNeighbors(sprite);
+                        }
                     }
                 }
             }, CONFIG.longPressDuration);
@@ -929,6 +1043,67 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     renderer.domElement.addEventListener('pointermove', (e) => {
+        // 포인터 위치 갱신
+        const index = pointerCache.findIndex(p => p.id === e.pointerId);
+        if (index !== -1) {
+            pointerCache[index].x = e.clientX;
+            pointerCache[index].y = e.clientY;
+        }
+
+        // 💡 핀치 줌 (모바일 터치 확대/축소) - 충돌 제한 없이 무제한 관통
+        if (pointerCache.length === 2) {
+            const dx = pointerCache[0].x - pointerCache[1].x;
+            const dy = pointerCache[0].y - pointerCache[1].y;
+            const curPinchDist = Math.hypot(dx, dy);
+
+            if (prevPinchDist > 0) {
+                // 거리가 멀어지면 zoomFactor < 1 (확대), 가까워지면 > 1 (축소)
+                const zoomFactor = prevPinchDist / curPinchDist;
+
+                const offset = camera.position.clone().sub(CAM_STATE.target);
+                const currentDist = offset.length();
+                let newDist = THREE.MathUtils.clamp(currentDist * zoomFactor, CAM_STATE.minDistance, CAM_STATE.maxDistance);
+
+                offset.normalize().multiplyScalar(newDist);
+                camera.position.copy(CAM_STATE.target).add(offset);
+                camera.lookAt(CAM_STATE.target);
+            }
+            prevPinchDist = curPinchDist;
+            return; // 핀치 줌 중에는 다른 회전/이동 무시
+        }
+
+        // 💡 카메라 회전/이동 처리 (mouseDown 상태일 때만)
+        if (mouseDown && pointerCache.length === 1) { // 터치가 하나일 때만 이동/회전
+            const dist = Math.hypot(e.clientX - mouseDownPos.x, e.clientY - mouseDownPos.y);
+
+            if (dist > CONFIG.dragThreshold) {
+                isDragging = true;
+
+                const moveX = e.clientX - lastPosX;
+                const moveY = e.clientY - lastPosY;
+
+                if (STATE.currentMode === 'pan') {
+                    // ✋ 상하좌우 이동 (Panning)
+                    const camDist = camera.position.distanceTo(CAM_STATE.target);
+                    const panSpeed = 0.01 * (camDist / 10);
+                    const vRight = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 0);
+                    const vUp = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 1);
+                    const panVector = vRight.multiplyScalar(-moveX * panSpeed)
+                        .add(vUp.multiplyScalar(moveY * panSpeed));
+                    CAM_STATE.target.add(panVector);
+                    camera.position.add(panVector);
+                    camera.lookAt(CAM_STATE.target);
+                } else {
+                    // 🔄 회전 (Rotation) - 관성 없이 즉각적으로 반영
+                    const rotateSpeed = 0.005;
+                    applyCameraRotation(-moveX * rotateSpeed, -moveY * rotateSpeed);
+                }
+
+                lastPosX = e.clientX;
+                lastPosY = e.clientY;
+            }
+        }
+
         if (STATE.status !== 'playing' && STATE.status !== 'review') return;
 
         // 터치/클릭 후 일정 거리 이상 움직이면 꾹 누르기 타이머 취소
@@ -944,8 +1119,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 마우스 호버 효과 (PC 전용)
-        if (e.pointerType === 'mouse') {
+        // 마우스 호버 효과 (PC 전용, 드래그 중이 아닐 때만)
+        if (e.pointerType === 'mouse' && !isDragging) {
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
             raycaster.setFromCamera(mouse, camera);
@@ -975,9 +1150,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    function handlePointerRemove(e) {
+        pointerCache = pointerCache.filter(p => p.id !== e.pointerId);
+        activePointers = pointerCache.length;
+        if (activePointers < 2) prevPinchDist = -1;
+        if (activePointers === 0) isMultiTouch = false;
+    }
+
     renderer.domElement.addEventListener('pointerup', (e) => {
-        activePointers--;
-        if (activePointers < 0) activePointers = 0;
+        handlePointerRemove(e);
+        mouseDown = false;    // 💡 마우스 놓음 상태
+        isDragging = false;
 
         if (longPressTimer) {
             clearTimeout(longPressTimer);
@@ -1014,9 +1197,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (activePointers === 0) isMultiTouch = false;
     });
 
-    renderer.domElement.addEventListener('pointercancel', () => {
-        activePointers--;
-        if (activePointers < 0) activePointers = 0;
+    renderer.domElement.addEventListener('pointercancel', (e) => {
+        handlePointerRemove(e);
         if (activePointers === 0) isMultiTouch = false;
 
         if (longPressTimer) {
@@ -1026,6 +1208,20 @@ document.addEventListener('DOMContentLoaded', () => {
         isLongPressing = false;
         clearHighlight();
     });
+
+    // 💡 마우스 휠을 이용한 확대/축소 (Zoom)
+    window.addEventListener('wheel', (e) => {
+        const offset = camera.position.clone().sub(CAM_STATE.target);
+        const currentDist = offset.length();
+
+        // 휠 방향에 따라 거리 조절 (부드러운 비율 기반)
+        const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9;
+        let newDist = THREE.MathUtils.clamp(currentDist * zoomFactor, CAM_STATE.minDistance, CAM_STATE.maxDistance);
+
+        offset.normalize().multiplyScalar(newDist);
+        camera.position.copy(CAM_STATE.target).add(offset);
+        camera.lookAt(CAM_STATE.target);
+    }, { passive: true });
 
     // 화면 크기 변경 시 대응
     window.addEventListener('resize', () => {
@@ -1041,18 +1237,31 @@ document.addEventListener('DOMContentLoaded', () => {
         requestAnimationFrame(animate);
 
         // 💡 카메라 타겟(시점 중심)을 격자 범위 내로 부드럽게 제한
-        const margin = CONFIG.gridSize * 0.5;
+        const margin = CONFIG.gridSize * 1.5;
         const maxBound = (CONFIG.gridSize - 1) * CONFIG.spacing + margin;
         const minBound = -margin;
 
-        controls.target.x = THREE.MathUtils.clamp(controls.target.x, minBound, maxBound);
-        controls.target.y = THREE.MathUtils.clamp(controls.target.y, minBound, maxBound);
-        controls.target.z = THREE.MathUtils.clamp(controls.target.z, minBound, maxBound);
+        CAM_STATE.target.x = THREE.MathUtils.clamp(CAM_STATE.target.x, minBound, maxBound);
+        CAM_STATE.target.y = THREE.MathUtils.clamp(CAM_STATE.target.y, minBound, maxBound);
+        CAM_STATE.target.z = THREE.MathUtils.clamp(CAM_STATE.target.z, minBound, maxBound);
 
-        controls.update(); // OrbitControls 상태 업데이트
         renderer.render(scene, camera); // Three.js 렌더링 실행
     }
 
     showStartMenu(); // 시작 메뉴 표시
     animate(); // 애니메이션 루프 시작
+
+    // ==========================================
+    // 💡 모바일 브라우저 전용 터치 및 스와이프 차단 로직
+    // ==========================================
+    document.addEventListener('touchmove', function (e) {
+        const startMenu = document.getElementById('start-menu-overlay');
+        const isMenuVisible = startMenu && !startMenu.classList.contains('hidden');
+
+        // 게임을 플레이 중이거나 메뉴가 닫혀 있는 상태에서는
+        // 스와이프(뒤로가기, 앞으로가기) 및 상하 드래그(당겨서 새로고침, 인앱 브라우저 닫기)를 차단.
+        if (!isMenuVisible) {
+            e.preventDefault();
+        }
+    }, { passive: false }); // passive: false를 주어야 preventDefault 적용이 가능합니다.
 });

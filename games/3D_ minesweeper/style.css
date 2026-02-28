@@ -30,6 +30,8 @@ body {
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     touch-action: none;
     /* 브라우저 기본 터치 액션(줌 등) 비활성화 */
+    overscroll-behavior: none;
+    /* 당겨서 새로고침 및 스와이프 뒤로가기 오버스크롤 방지 */
     user-select: none;
     /* 텍스트 선택 방지 */
     -webkit-user-select: none;

@@ -97,7 +97,7 @@
                 <ul
                     style="font-size: 0.95rem; color: #cbd5e1; list-style: disc; margin-left: 1.5rem; line-height: 1.7;">
                     <li>허공에 떠 있는 사각형 큐브 덩어리 안에는 <b>폭탄(지뢰)</b>들이 숨어있습니다.</li>
-                    <li>폭탄을 피해서 <b>안전한 블록들만 열면(파내면)</b> 이기는 게임입니다. 빙글빙글 돌려가며 찾아보세요!</li>
+                    <li>폭탄을 피해서 <b>안전한 블록들만 파내면</b> 이기는 게임입니다. 빙글빙글 돌려가며 찾아보세요!</li>
                     <li>단 한 번이라도 폭탄이 있는 블록을 파내면 자폭하며 <b>게임 오버</b>됩니다!</li>
                     <li><span style="color: #fca5a5; font-weight: bold;">첫 클릭은 무조건 안전</span>하니 걱정 마세요. 아무 곳이나 시원하게
                         눌러서 시작하시면 됩니다.</li>
@@ -132,11 +132,11 @@
                         선택</b>한 후에 블록을 터치해주세요!</p>
                 <ul style="font-size: 0.95rem; color: #e2e8f0; list-style: none; padding: 0; line-height: 1.8;">
                     <li style="margin-bottom: 0.5rem;">✋ <b>이동 (Pan)</b><br><span
-                            style="color:#cbd5e1; font-size:0.85rem;">가장 안전한 카메라 관찰 모드입니다. 블록을 파지 않습니다. 드래그로 시점을
-                            <b>회전</b>하고, 휠/핀치로 <b>확대/축소</b>하세요.</span></li>
+                            style="color:#cbd5e1; font-size:0.85rem;">가장 안전한 카메라 관찰 모드입니다. 블록을 파지 않습니다. 드래그로 화면을
+                            <b>상하좌우로 이동</b>하고, 휠/핀치로 <b>확대/축소</b>하세요.</span></li>
 
                     <li style="margin-bottom: 0.5rem;">⛏️ <b>파기 (Dig)</b><br><span
-                            style="color:#cbd5e1; font-size:0.85rem;">안전하다고 확신하는 의심 없는 블록의 껍질을 까냅니다.</span></li>
+                            style="color:#cbd5e1; font-size:0.85rem;">안전하다고 확신하는 의심 없는 블록을 파냅니다.</span></li>
 
                     <li style="margin-bottom: 0.5rem;">🚩 <b>깃발 (Flag)</b><br><span
                             style="color:#cbd5e1; font-size:0.85rem;">"여긴 100% 폭탄이다!" 생각되는 곳에 꽂는 <b>방어막</b>입니다. 한 번
@@ -144,18 +144,19 @@
 
                     <li style="margin-bottom: 0.5rem;">🔍 <b>탐색 (Highlight) <span
                                 style="color:#a78bfa; font-size:0.8rem;">🔥핵심 꿀팁🔥</span></b><br><span
-                            style="color:#cbd5e1; font-size:0.85rem;">3D는 헷갈리기 쉽습니다. 열려있는 '숫자' 블록을 <b>0.3초간 꾹~
-                                누르거나</b> 탐색 버튼을 켜고 터치해 보세요. 그 숫자와 닿아있는 <b>가려진 26방면을 보라색으로 보여줍니다.</b></span></li>
+                            style="color:#cbd5e1; font-size:0.85rem;">3D는 헷갈리기 쉽습니다. <b>숫자블록을 누르면 연관된 블럭을
+                                표시합니다.</b></span></li>
 
                     <li>⚡ <b>연쇄 파기 (Chord)</b><br><span style="color:#cbd5e1; font-size:0.85rem;">"숫자가 2인데 그 옆에 깃발을 벌써
-                            2개 다 꽂았다면?" 나머지는 다 안전하다는 뜻이죠! 이 모드로 터치하면 나머지 빈칸들을 안전하게 <b>한꺼번에 알아서 파내줍니다.</b></span>
+                            2개 다 꽂았다면?" 나머지는 다 안전하다는 뜻이죠! 이 모드에서 해당 <b>숫자를 터치해 1.4배로 키운 뒤, 0.3초간 꾹 누르고 있으면</b> 나머지 빈칸들을
+                            안전하게 한꺼번에 알아서 파내줍니다.</span>
                     </li>
                 </ul>
             </div>
 
             <button id="btn-close-help" class="btn btn-blue w-full mt-2"
                 style="padding: 1rem; font-size: 1.1rem; font-weight: bold;">
-                확인했습니다! (닫기)
+                닫기
             </button>
         </div>
     </div>
@@ -206,15 +207,10 @@
                 <button id="btn-mode-chord" class="mode-btn" style="flex: 1.2;">⚡ 연쇄</button>
             </div>
 
-            <!-- 동작 안내 가이드 -->
-            <div class="glass-panel" style="padding: 0.75rem 1.5rem; font-size: 0.8rem; color: #cbd5e1;">
-                <div class="flex items-center gap-3 text-center flex-wrap justify-center">
-                    <span>✋: 화면 패닝</span>
-                    <span style="color: #475569;">|</span>
-                    <span>⛏️: 블록오픈</span>
-                    <span style="color: #475569;">|</span>
-                    <span>⚡: 강조후선택</span>
-                </div>
+            <!-- 동작 안내 가이드 (동적 텍스트 적용) -->
+            <div class="glass-panel text-center"
+                style="padding: 0.75rem 1.5rem; font-size: 0.85rem; color: #e2e8f0; line-height: 1.4;">
+                <span id="mode-desc-text">⛏️ 파기: 선택한 블록을 파냅니다.</span>
             </div>
         </div>
     </div>
