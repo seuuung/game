@@ -1,0 +1,44 @@
+/* 기본 폰트를 킹받는 굴림/Comic Sans 스타일로 설정하고, 커서를 대기 상태로 고정 */
+body {
+    font-family: 'Comic Sans MS', '굴림', Gulim, sans-serif;
+    background-color: #ffff00;
+    /* 눈 아픈 쨍한 노란색 */
+    cursor: wait !important;
+}
+
+/* 버튼이 도망가기 위한 속성 */
+.runaway {
+    transition: top 0.15s ease-out, left 0.15s ease-out;
+    z-index: 50;
+}
+
+/* 촌스러운 텍스트 애니메이션 */
+@keyframes rainbow {
+    0% {
+        color: red;
+    }
+
+    20% {
+        color: orange;
+    }
+
+    40% {
+        color: green;
+    }
+
+    60% {
+        color: blue;
+    }
+
+    80% {
+        color: purple;
+    }
+
+    100% {
+        color: red;
+    }
+}
+
+.rainbow-text {
+    animation: rainbow 2s infinite;
+}
