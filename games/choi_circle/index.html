@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>최원형 (The Ultimate Circle)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- MathJax for LaTeX rendering -->
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady();
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        /* 킹받는 커스텀 커서 (회전하는 원형) */
+        body {
+            cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="none" stroke="red" stroke-width="4" stroke-dasharray="20 10"><animateTransform attributeName="transform" type="rotate" from="0 16 16" to="360 16 16" dur="1s" repeatCount="indefinite"/></circle><circle cx="16" cy="16" r="2" fill="red"/></svg>') 16 16, auto;
+            overflow: hidden;
+            /* 스크롤바 숨겨서 더 답답하게 만듦 */
+            background: conic-gradient(from 0deg, #ff9a9e, #fecfef, #ff9a9e);
+            animation: spin-bg 10s linear infinite, eye-strain 20s infinite alternate;
+            height: 100vh;
+            width: 100vw;
+            user-select: none;
+            font-family: 'Pretendard', sans-serif;
+        }
+
+        /* 배경 회전 애니메이션 */
+        @keyframes spin-bg {
+            100% {
+                background: conic-gradient(from 360deg, #ff9a9e, #fecfef, #ff9a9e);
+            }
+        }
+
+        /* 눈 아프게 만드는 시각 테러 애니메이션 */
+        @keyframes eye-strain {
+
+            0%,
+            100% {
+                filter: blur(0px) hue-rotate(0deg) invert(0%);
+                transform: scale(1);
+            }
+
+            25% {
+                filter: blur(1px) hue-rotate(45deg) invert(10%);
+                transform: scale(1.02);
+            }
+
+            50% {
+                filter: blur(3px) hue-rotate(90deg) invert(20%);
+                transform: scale(0.98);
+            }
+
+            75% {
+                filter: blur(1px) hue-rotate(180deg) invert(5%);
+                transform: scale(1.05);
+            }
+        }
+
+        /* 중앙의 거대한 원형 (숨쉬는 듯한 애니메이션) */
+        .giant-circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #ff0844 0%, #ffb199 100%);
+            box-shadow: 0 0 50px rgba(255, 8, 68, 0.5);
+            animation: pulse 2s infinite alternate, wobble 5s infinite;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: translate(-50%, -50%) scale(0.9);
+            }
+
+            100% {
+                transform: translate(-50%, -50%) scale(1.1);
+                box-shadow: 0 0 100px rgba(255, 8, 68, 0.8);
+            }
+        }
+
+        @keyframes wobble {
+
+            0%,
+            100% {
+                border-radius: 50%;
+            }
+
+            25% {
+                border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+            }
+
+            50% {
+                border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+            }
+
+            75% {
+                border-radius: 50% 50% 40% 60% / 50% 60% 40% 50%;
+            }
+        }
+
+        /* 궤도를 도는 텍스트 */
+        .orbit-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 400px;
+            height: 400px;
+            margin-top: -200px;
+            margin-left: -200px;
+            animation: orbit 10s linear infinite;
+            pointer-events: none;
+        }
+
+        .orbit-text span {
+            position: absolute;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #333;
+            text-shadow: 0 0 5px white;
+        }
+
+        @keyframes orbit {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* 도망가는 킹받는 버튼 */
+        .runaway-btn {
+            position: absolute;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            font-weight: 800;
+            background: linear-gradient(45deg, #f093fb, #f5576c);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            /* 당연히 원형에 가깝게 */
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            transition: all 0.1s ease;
+            z-index: 50;
+        }
+
+        /* 클릭 시 스폰되는 수학 원형 */
+        .math-circle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.85);
+            border: 3px solid #f5576c;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #d32f2f;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            animation: pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards, float 3s ease-in-out infinite;
+            transform: translate(-50%, -50%) scale(0);
+            padding: 15px;
+            pointer-events: none;
+        }
+
+        @keyframes pop-in {
+            to {
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                margin-top: 0;
+            }
+
+            50% {
+                margin-top: -20px;
+            }
+        }
+
+        /* 마퀴(흐르는 글씨) 킹받게 하기 */
+        .marquee-container {
+            position: fixed;
+            top: 10px;
+            width: 100%;
+            font-size: 2rem;
+            font-weight: 900;
+            color: rgba(255, 0, 0, 0.7);
+            white-space: nowrap;
+            overflow: hidden;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        /* 내부 span 태그들이 따로 도는 현상을 방지하기 위해 전용 클래스 사용 */
+        .marquee-container .marquee-text {
+            display: inline-block;
+            animation: scroll-left 5s linear infinite;
+        }
+
+        @keyframes scroll-left {
+            0% {
+                transform: translateX(100vw);
+            }
+
+            100% {
+                transform: translateX(-100%);
+            }
+        }
+
+        /* 최원형의 진실 팝업 */
+        #truth-alert {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            padding: 40px;
+            border-radius: 30px;
+            width: 500px;
+            box-shadow: 0 0 100px rgba(255, 0, 0, 1);
+            z-index: 10000;
+            flex-direction: column;
+            align-items: center;
+            border: 5px dashed #ff0844;
+            color: white;
+            animation: pop-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* 원형탈모 빔 텍스트 애니메이션 (무지갯빛 번쩍임) */
+        .beam-text {
+            background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8f00ff, #ff0000);
+            background-size: 200% auto;
+            color: transparent;
+            -webkit-background-clip: text;
+            background-clip: text;
+            animation: shine 1s linear infinite;
+            font-size: 1.6rem;
+            font-weight: 900;
+        }
+
+        @keyframes shine {
+            to {
+                background-position: 200% center;
+            }
+        }
+
+        /* 원형 단어 킹받게 강조 */
+        @keyframes shake-text {
+            0% {
+                transform: rotate(-5deg) scale(1.1);
+            }
+
+            50% {
+                transform: rotate(5deg) scale(0.9);
+            }
+
+            100% {
+                transform: rotate(-5deg) scale(1.1);
+            }
+        }
+
+        .highlight-circle {
+            background-color: #ffeb3b;
+            color: #d32f2f;
+            font-weight: 900;
+            padding: 0 5px;
+            border: 2px dashed #d32f2f;
+            border-radius: 10px;
+            display: inline-block;
+            animation: shake-text 0.3s infinite;
+            text-shadow: 1px 1px 0 #fff;
+        }
+
+        /* 타이핑 방해 입력창 */
+        .fake-search-container {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .fake-search-container input {
+            padding: 15px 30px;
+            border-radius: 50px;
+            border: 5px solid #ff0844;
+            outline: none;
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s;
+        }
+
+        .fake-search-container input:focus {
+            transform: scale(1.1) rotate(5deg);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="marquee-container">
+        <!-- 텍스트 묶음을 .marquee-text 클래스로 보호 -->
+        <span class="marquee-text">🚨 경고: 화면에 <span class="highlight-circle">원형</span>탈모가 올 수 있습니다. 최.<span
+                class="highlight-circle">원형</span>. 그는 완벽한 동그라미입니다. 🚨</span>
+    </div>
+
+    <!-- 중앙 조형물 -->
+    <div class="giant-circle" id="center-circle">
+        <h1 class="text-6xl font-black tracking-widest mb-2">최<span class="highlight-circle">원형</span></h1>
+        <p class="text-xl font-bold">The Ultimate Circle</p>
+        <div class="mt-4 text-sm opacity-80" id="center-math">
+            $x^2 + y^2 = r^2$
+        </div>
+    </div>
+
+    <!-- 궤도 텍스트 (JavaScript로 위치 설정) -->
+    <div class="orbit-text" id="orbit"></div>
+
+    <!-- 도망가는 버튼 -->
+    <button class="runaway-btn" id="runawayBtn" style="top: 60%; left: 50%; transform: translateX(-50%);">
+        최<span class="highlight-circle">원형</span>의 진실 보기
+    </button>
+
+    <!-- 타이핑 방해 입력창 -->
+    <div class="fake-search-container">
+        <label for="troll-input"
+            class="text-red-600 font-bold mb-2 bg-white/50 px-3 py-1 rounded-full backdrop-blur-sm">👇 아무 글자나 타이핑 해보세요
+            👇</label>
+        <input type="text" id="troll-input" placeholder="여기를 클릭하고 타이핑" autocomplete="off">
+    </div>
+
+    <!-- 최원형의 진실 알림창 -->
+    <div id="truth-alert">
+        <h2 class="text-4xl font-black text-red-500 mb-6 animate-pulse">🛑 최<span class="highlight-circle">원형</span>의 진실
+            🛑</h2>
+        <div class="text-left text-lg text-gray-200 space-y-4 font-bold w-full">
+            <p>사실 그의 이름 <span class="text-yellow-300">'<span class="highlight-circle">원형</span>(Circle)'</span>에는 끔찍한
+                비밀이 숨겨져 있습니다.</p>
+            <ul class="list-disc pl-6 space-y-3 text-base text-gray-300">
+                <li>각박한 세상 속에서 혼자 <strong>모서리 없이 둥글게만</strong> 살아가려는 이기적인 형태</li>
+                <li>필살기: 눈을 마주치는 즉시 정수리에 내리꽂히는 <strong><span class="beam-text"><span
+                                class="highlight-circle">원형</span>탈모 빔!!! ☄️</span></strong> (회피 불가)</li>
+                <li>그의 인생은 앞으로 나아가지 못하고 제자리만 도는 <strong>무한 쳇바퀴</strong></li>
+                <li>최<span class="highlight-circle">원형</span>의 뇌 구조 방정식: <br><span
+                        class="text-xl text-white inline-block mt-2">$x^2 + y^2 = 0$</span> <br>(해석: 반지름이 0. 즉, 뇌가 텅
+                    비었음)</li>
+            </ul>
+            <p class="text-red-400 text-center mt-8 text-2xl font-black">결론: 그는 사람의 탈을 쓴 동그라미입니다.</p>
+        </div>
+        <button
+            class="mt-8 bg-white text-black px-8 py-3 rounded-full font-black text-xl hover:bg-gray-300 transition-transform hover:scale-110"
+            onclick="hideTruth()">진실 덮어두기 (침묵)</button>
+    </div>
+
+    <script>
+        // 1. 궤도 텍스트 생성
+        const orbitText = "CHOI WON HYEONG IS THE BEST SHAPE IN THE UNIVERSE ";
+        const orbitContainer = document.getElementById('orbit');
+        const radius = 200;
+
+        for (let i = 0; i < orbitText.length; i++) {
+            const span = document.createElement('span');
+            span.innerText = orbitText[i];
+            const angle = (i / orbitText.length) * 360;
+            // 각도에 따른 위치 계산 (삼각함수 사용)
+            const x = radius * Math.cos(angle * (Math.PI / 180));
+            const y = radius * Math.sin(angle * (Math.PI / 180));
+
+            span.style.transform = `translate(${x + radius}px, ${y + radius}px) rotate(${angle + 90}deg)`;
+            orbitContainer.appendChild(span);
+        }
+
+        // 2. 도망가는 버튼 로직 (난이도 완화)
+        const runawayBtn = document.getElementById('runawayBtn');
+        let isButtonRunning = false;
+
+        // 마우스가 근처에 와도 도망가게 만들기
+        document.addEventListener('mousemove', (e) => {
+            const btnRect = runawayBtn.getBoundingClientRect();
+            const btnCenterX = btnRect.left + btnRect.width / 2;
+            const btnCenterY = btnRect.top + btnRect.height / 2;
+
+            const dist = Math.sqrt(Math.pow(e.clientX - btnCenterX, 2) + Math.pow(e.clientY - btnCenterY, 2));
+
+            // 마우스 접근 감지 거리를 대폭 줄임 (기존 100px -> 70px)
+            // 또한 버튼 위에 마우스를 올렸을 때 즉시 도망가는 mouseover 이벤트를 제거했습니다.
+            if (dist < 70) {
+                moveButton();
+            }
+        });
+
+        function moveButton() {
+            const maxX = window.innerWidth - runawayBtn.clientWidth - 20;
+            const maxY = window.innerHeight - runawayBtn.clientHeight - 20;
+
+            // 랜덤한 위치로 이동하되, 화면 밖으로 나가지 않게
+            const newX = Math.max(20, Math.floor(Math.random() * maxX));
+            const newY = Math.max(20, Math.floor(Math.random() * maxY));
+
+            runawayBtn.style.transform = `translate(0, 0)`; // 기존 transform 초기화
+            runawayBtn.style.left = `${newX}px`;
+            runawayBtn.style.top = `${newY}px`;
+        }
+
+        // 클릭 시 진실 알림창 띄우기
+        runawayBtn.addEventListener('click', () => {
+            const truthAlert = document.getElementById('truth-alert');
+            truthAlert.style.display = 'flex';
+
+            // 팝업 안의 수식 렌더링을 위해 MathJax 재호출
+            if (window.MathJax) {
+                MathJax.typesetPromise([truthAlert]).catch((err) => console.log(err.message));
+            }
+        });
+
+        // 진실 알림창 닫기 함수
+        function hideTruth() {
+            document.getElementById('truth-alert').style.display = 'none';
+        }
+
+        // 3. 화면 클릭 시 수식 원형 생성 로직
+        const formulas = [
+            '$A = \\pi r^2$',               // 원의 넓이
+            '$C = 2\\pi r$',                // 원의 둘레
+            '$V = \\frac{4}{3}\\pi r^3$',   // 구의 부피
+            '$S = 4\\pi r^2$',              // 구의 겉넓이
+            '$e^{i\\pi} + 1 = 0$',          // 오일러 등식
+            '$(x-a)^2 + (y-b)^2 = r^2$',    // 원의 방정식
+            '$\\int_{-\\infty}^{\\infty} e^{-x^2} dx = \\sqrt{\\pi}$', // 가우스 적분
+            '$\\oint_C \\vec{B} \\cdot d\\vec{l} = \\mu_0 I_{enc}$'    // 앙페르 법칙 (폐곡선)
+        ];
+
+        let clickCount = 0;
+
+        document.body.addEventListener('click', (e) => {
+            // 버튼이나 가짜 알림창 클릭 시에는 제외
+            if (e.target.closest('button') || e.target.closest('#truth-alert')) return;
+
+            clickCount++;
+
+            const mathCircle = document.createElement('div');
+            mathCircle.className = 'math-circle';
+            mathCircle.style.left = `${e.clientX}px`;
+            mathCircle.style.top = `${e.clientY}px`;
+
+            // 랜덤 크기
+            const size = Math.floor(Math.random() * 80) + 80; // 80px ~ 160px
+            mathCircle.style.width = `${size}px`;
+            mathCircle.style.height = `${size}px`;
+
+            // 랜덤 수식 선택
+            const randomFormula = formulas[Math.floor(Math.random() * formulas.length)];
+            mathCircle.innerHTML = randomFormula;
+
+            document.body.appendChild(mathCircle);
+
+            // MathJax를 사용하여 새로 생성된 수식 렌더링
+            if (window.MathJax) {
+                MathJax.typesetPromise([mathCircle]).catch((err) => console.log(err.message));
+            }
+
+            // 5초 후 요소 삭제 (메모리 누수 방지)
+            setTimeout(() => {
+                if (mathCircle.parentNode) {
+                    mathCircle.remove();
+                }
+            }, 5000);
+        });
+
+        // 7. 타이핑 방해 로직 - '원형탈모 빔' 고정
+        const trollInput = document.getElementById('troll-input');
+        const trollString = "원형탈모빔!!!!!원형탈모빔!!!!!원형탈모빔!!!!!";
+
+        // 데스크탑: 키보드를 누르는 즉시 조합을 막고 글자를 강제 삽입
+        trollInput.addEventListener('keydown', (e) => {
+            // 백스페이스, 삭제, 방향키 등은 기본 동작 허용
+            if (e.key === 'Backspace' || e.key === 'Delete' || e.key.startsWith('Arrow')) return;
+            if (e.ctrlKey || e.metaKey || e.altKey) return;
+            if (e.key.length > 1) return; // Enter, Shift 등 기능키 무시
+
+            // 브라우저 기본 입력 차단 (IME 한글 조합 자체를 원천 차단)
+            e.preventDefault();
+
+            const currentLen = trollInput.value.length;
+
+            // 일정 길이 이상 치면 얄밉게 싹 지워버리기
+            if (currentLen >= trollString.length) {
+                trollInput.value = "";
+            } else {
+                trollInput.value += trollString[currentLen];
+            }
+        });
+
+        // 모바일: keydown 제어가 잘 안 먹히는 폰 키보드를 위한 폴백
+        trollInput.addEventListener('input', (e) => {
+            setTimeout(() => {
+                const currentLen = trollInput.value.length;
+                let newStr = "";
+                for (let i = 0; i < currentLen; i++) {
+                    newStr += trollString[i % trollString.length];
+                }
+                trollInput.value = newStr;
+            }, 0);
+        });
+    </script>
+</body>
+
+</html>
