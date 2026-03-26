@@ -289,14 +289,20 @@ function initStage7() {
     ];
     
     let text = "제 1조: 본 약관은 매우 중요합니다.<br><br>";
-    for (let i = 2; i <= 150; i++) {
+    for (let i = 2; i <= 1000; i++) {
         const p = phrases[i % phrases.length];
         text += `제 ${i}조: ${p}<br><br>`;
     }
     box.innerHTML = text;
     box.scrollTop = 0;
-    document.getElementById('s7-btn').classList.add('pointer-events-none', 'bg-slate-300', 'text-slate-500');
-    document.getElementById('s7-btn').classList.remove('bg-blue-600', 'text-white');
+    
+    // 고정 버튼 초기화 (상시 활성 상태)
+    const btn = document.getElementById('s7-btn');
+    if (btn) {
+        btn.classList.remove('hidden', 'pointer-events-none', 'bg-slate-300', 'text-slate-500');
+        btn.classList.add('bg-blue-600', 'text-white');
+        btn.innerText = "약관을 모두 정독했습니다 (동의)";
+    }
 }
 function checkScrollSpeed(el) {
     const now = Date.now();
@@ -312,13 +318,6 @@ function checkScrollSpeed(el) {
         }
     }
     lastScrollTop = el.scrollTop; lastScrollTime = now;
-
-    // 바닥 도달 체크
-    if (el.scrollHeight - el.scrollTop <= el.clientHeight + 10) {
-        const btn = document.getElementById('s7-btn');
-        btn.classList.remove('pointer-events-none', 'bg-slate-300', 'text-slate-500');
-        btn.classList.add('bg-blue-600', 'text-white');
-    }
 }
 
 /* --- 8단계: 반자성 퍼즐 (도망가는 박스) --- */
@@ -331,6 +330,9 @@ function initStage8() {
 
     function handleRepel(e) {
         if (!s8Active) return;
+        // 터치 기본 동작(스크롤, 확대 등) 방지
+        if (e.cancelable) e.preventDefault();
+        
         const rect = area.getBoundingClientRect();
         const pointerX = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
         const pointerY = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
@@ -342,8 +344,21 @@ function initStage8() {
         const dx = tx - pointerX; const dy = ty - pointerY;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
+        // 모바일 보정: 터치 시작 시 너무 가까우면 성공 체크 전에 튕겨내기
+        const isTouchStart = e.type === 'touchstart';
+
         if (dist < 100) { // 척력 범위
-            if (dist < 20) { // 강제로 밀어넣은 경우 (성공)
+            // 탭/클릭 시도 시 즉시 도망가게 보정 (성공 판정보다 우선하여 튕겨냄)
+            if (isTouchStart && dist < 45) {
+                let jumpForce = 80;
+                let njx = tx + (dx / (dist || 1)) * jumpForce;
+                let njy = ty + (dy / (dist || 1)) * jumpForce;
+                target.style.left = `${Math.max(40, Math.min(rect.width - 40, njx)) - targetRect.width / 2}px`;
+                target.style.top = `${Math.max(40, Math.min(rect.height - 40, njy)) - targetRect.height / 2}px`;
+                return;
+            }
+
+            if (dist < 18) { // 성공 범위 (약간 축소하여 난이도 유지)
                 s8Active = false;
                 target.innerText = "성공!";
                 target.classList.remove('bg-blue-500');
@@ -364,6 +379,7 @@ function initStage8() {
         }
     }
     area.onmousemove = handleRepel;
+    area.ontouchstart = handleRepel;
     area.ontouchmove = handleRepel;
 }
 
