@@ -136,7 +136,7 @@
                 <div class="shrink-0 mb-4">
                     <h2 class="text-xl md:text-2xl font-bold mb-2">3단계: 인내심 인증</h2>
                     <p class="text-sm md:text-base text-slate-600">아래의 체크박스 중 <strong
-                            class="text-blue-600 underline">정확히 73번째</strong> 하나만 체크하세요.</p>
+                            class="text-blue-600 underline">정확히 55번째</strong> 하나만 체크하세요.</p>
                 </div>
                 <div class="bg-white border border-slate-300 rounded-xl p-3 flex-1 overflow-y-auto mb-4 flex flex-wrap gap-2 content-start justify-center shadow-inner min-h-[250px]"
                     id="checkbox-hell"></div>
@@ -213,10 +213,10 @@
             </div>
 
             <!-- 8단계: 반자성 퍼즐 -->
-            <div id="stage-8" class="stage flex-1 flex-col relative overflow-hidden touch-none" id="s8-area">
+            <div id="stage-8" class="stage flex-1 flex-col relative overflow-hidden transition-colors duration-300">
                 <div class="shrink-0 mb-2 pointer-events-none relative z-20">
                     <h2 class="text-xl font-bold mb-2">8단계: 미세 제어 인증</h2>
-                    <p class="text-sm text-slate-600">파란색 네모 박스 안으로 마우스(또는 터치)를 집어넣으세요.</p>
+                    <p class="text-sm text-slate-600">목표 옆 빈 공간을 <strong class="text-blue-600 underline">꾹 누른 채로</strong> 조심히 접근하세요!</p>
                 </div>
                 <!-- 척력으로 도망다닐 타겟 박스 -->
                 <div id="anti-magnet"
@@ -258,6 +258,10 @@
                     <button onclick="checkStage10()" id="lucky-btn"
                         class="w-full bg-blue-600 text-white font-bold text-xl py-6 rounded-2xl shadow-xl transition-all active:scale-95">
                         인증 완료하기 (클릭)
+                    </button>
+                    <button id="s10-next-btn" onclick="nextStage(11)"
+                        class="hidden w-full bg-green-600 text-white font-bold text-xl py-6 rounded-2xl shadow-xl transition-all active:scale-95 animate-bounce">
+                        최종 인증서 발급받기
                     </button>
                     <p id="lucky-result" class="mt-4 text-slate-500 font-bold text-lg hidden">꽝! 결과는 <span
                             id="lucky-num" class="text-red-500">0</span> 이었습니다.</p>

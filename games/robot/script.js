@@ -126,6 +126,8 @@ function resetAll() {
     }
     const lResult = document.getElementById('lucky-result');
     if (lResult) lResult.classList.add('hidden');
+    const lNextBtn = document.getElementById('s10-next-btn');
+    if (lNextBtn) lNextBtn.classList.add('hidden');
 }
 
 /* --- 1단계: 순간이동 버튼 --- */
@@ -191,7 +193,7 @@ function initStage3() {
 function checkStage3() {
     const cbs = document.querySelectorAll('#checkbox-hell input');
     const checked = Array.from(cbs).map((cb, i) => cb.checked ? i + 1 : null).filter(v => v);
-    if (checked.length === 1 && checked[0] === 73) nextStage(4);
+    if (checked.length === 1 && checked[0] === 55) nextStage(4);
     else fail(checked.length === 0 ? "아무것도 선택하지 않으셨습니다." : checked.length > 1 ? "단 하나만 선택하세요!" : `${checked[0]}번째를 선택했습니다. 처음부터 다시 세세요.`);
 }
 
@@ -338,66 +340,100 @@ function checkScrollSpeed(el) {
 }
 
 /* --- 8단계: 반자성 퍼즐 (도망가는 박스) --- */
-let s8Active = false;
+let s8Active = false, s8Pressed = false;
 function initStage8() {
-    s8Active = true;
+    s8Active = true; s8Pressed = false;
     const target = document.getElementById('anti-magnet');
     const area = document.getElementById('stage-8');
     target.style.left = '50%'; target.style.top = '50%';
+    area.classList.remove('bg-blue-50');
 
-    function handleRepel(e) {
-        if (!s8Active) return;
-        // 터치 기본 동작(스크롤, 확대 등) 방지
+    let px = 0, py = 0, pVisible = false;
+    let rect = area.getBoundingClientRect();
+    
+    // 타겟의 현재 오프셋 위치 (px 단위)
+    let tx = rect.width / 2;
+    let ty = rect.height / 2;
+
+    const setPress = (val) => {
+        s8Pressed = val;
+        if (val) area.classList.add('bg-blue-50');
+        else area.classList.remove('bg-blue-50');
+    };
+
+    const updatePointer = (e) => {
+        pVisible = true;
+        const touch = (e.touches && e.touches.length > 0) ? e.touches[0] : 
+                      ((e.changedTouches && e.changedTouches.length > 0) ? e.changedTouches[0] : e);
+        px = touch.clientX - rect.left;
+        py = touch.clientY - rect.top;
         if (e.cancelable) e.preventDefault();
-        
-        const rect = area.getBoundingClientRect();
-        const pointerX = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-        const pointerY = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+    };
 
-        const targetRect = target.getBoundingClientRect();
-        const tx = targetRect.left - rect.left + targetRect.width / 2;
-        const ty = targetRect.top - rect.top + targetRect.height / 2;
+    area.onmousedown = (e) => { setPress(true); updatePointer(e); };
+    window.addEventListener('mouseup', () => setPress(false));
+    area.onmousemove = updatePointer;
+    area.onmouseleave = () => { pVisible = false; };
 
-        const dx = tx - pointerX; const dy = ty - pointerY;
+    area.addEventListener('touchstart', (e) => {
+        setPress(true);
+        updatePointer(e);
+        // 터치 시작 시 즉시 튕겨내기 (이전 점프 로직 유지)
+        const dx = tx - px; const dy = ty - py;
         const dist = Math.sqrt(dx * dx + dy * dy);
-
-        // 모바일 보정: 터치 시작 시 너무 가까우면 성공 체크 전에 튕겨내기
-        const isTouchStart = e.type === 'touchstart';
-
-        if (dist < 100) { // 척력 범위
-            // 탭/클릭 시도 시 즉시 도망가게 보정 (성공 판정보다 우선하여 튕겨냄)
-            if (isTouchStart && dist < 45) {
-                let jumpForce = 80;
-                let njx = tx + (dx / (dist || 1)) * jumpForce;
-                let njy = ty + (dy / (dist || 1)) * jumpForce;
-                target.style.left = `${Math.max(40, Math.min(rect.width - 40, njx)) - targetRect.width / 2}px`;
-                target.style.top = `${Math.max(40, Math.min(rect.height - 40, njy)) - targetRect.height / 2}px`;
-                return;
-            }
-
-            if (dist < 18) { // 성공 범위 (약간 축소하여 난이도 유지)
-                s8Active = false;
-                target.innerText = "성공!";
-                target.classList.remove('bg-blue-500');
-                target.classList.add('bg-green-500');
-                setTimeout(() => nextStage(9), 500);
-                return;
-            }
-            // 밀어내기 (역물리)
-            let force = 200 / (dist + 1);
-            let nx = tx + (dx / dist) * force; let ny = ty + (dy / dist) * force;
-
-            // 컨테이너 밖으로 못 나가게 가두기
-            nx = Math.max(40, Math.min(rect.width - 40, nx));
-            ny = Math.max(40, Math.min(rect.height - 40, ny));
-
-            target.style.left = `${nx - targetRect.width / 2}px`;
-            target.style.top = `${ny - targetRect.height / 2}px`;
+        if (dist < 60) {
+            tx += (dx / (dist || 1)) * 150;
+            ty += (dy / (dist || 1)) * 150;
         }
+    }, { passive: false });
+
+    area.addEventListener('touchmove', updatePointer, { passive: false });
+    area.addEventListener('touchend', () => { setPress(false); pVisible = false; });
+    window.addEventListener('touchcancel', () => { setPress(false); pVisible = false; });
+
+    function updatePhysics() {
+        if (!s8Active) return;
+
+        if (pVisible) {
+            const dx = tx - px; const dy = ty - py;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            const repelRange = s8Pressed ? 120 : 350;
+            const repelForce = s8Pressed ? 5 : 25; // 프레임 단위이므로 수치 조정
+
+            if (dist < repelRange) {
+                if (dist < 18) { // 성공
+                    s8Active = false;
+                    target.innerText = "성공!";
+                    target.classList.remove('bg-blue-500');
+                    target.classList.add('bg-green-500');
+                    setPress(false);
+                    setTimeout(() => nextStage(9), 500);
+                    return;
+                }
+                
+                // 밀어내기
+                const force = repelForce * (1 - dist / repelRange);
+                tx += (dx / (dist || 1)) * force;
+                ty += (dy / (dist || 1)) * force;
+            }
+        }
+
+        // 경계 제한
+        tx = Math.max(30, Math.min(rect.width - 30, tx));
+        ty = Math.max(30, Math.min(rect.height - 30, ty));
+
+        target.style.left = `${tx}px`;
+        target.style.top = `${ty}px`;
+        target.style.transform = `translate(-50%, -50%)`;
+
+        requestAnimationFrame(updatePhysics);
     }
-    area.onmousemove = handleRepel;
-    area.ontouchstart = handleRepel;
-    area.ontouchmove = handleRepel;
+
+    // 윈도우 크기 변화 대응
+    window.addEventListener('resize', () => { rect = area.getBoundingClientRect(); });
+    
+    requestAnimationFrame(updatePhysics);
 }
 
 /* --- 10단계: 운수 좋은 날 --- */
@@ -435,7 +471,12 @@ function checkStage10() {
                 resultText.classList.add('text-green-600');
                 btn.innerText = "로봇이 아니시군요! 환영합니다.";
                 btn.classList.replace('bg-blue-600', 'bg-green-600');
-                setTimeout(() => nextStage(11), 1200);
+                
+                // 자동 전환 대신 버튼 노출
+                setTimeout(() => {
+                    btn.classList.add('hidden');
+                    document.getElementById('s10-next-btn').classList.remove('hidden');
+                }, 1000);
             } else {
                 numSpan.innerText = luckyNum;
                 resultText.classList.remove('hidden');
