@@ -115,6 +115,8 @@ function resetAll() {
     document.getElementById('s5-flash-area').classList.add('hidden');
     document.getElementById('s5-input-area').classList.add('hidden');
     document.getElementById('s5-start-btn').classList.remove('hidden');
+    document.getElementById('s5-start-btn').innerText = '문자열 보기 (기회 2번)';
+    s9Views = 0;
 
     // 10단계 리셋
     const lBtn = document.getElementById('lucky-btn');
@@ -207,18 +209,33 @@ function initStage4() {
     }, 15000);
 }
 
-/* --- 5단계: 플래시 텍스트 --- */
-let s5String = "";
+/* --- 9단계: 순간 기억력 인증 (플래시 텍스트) --- */
+let s5String = "", s9Views = 0;
 function startStage5() {
-    document.getElementById('s5-start-btn').classList.add('hidden');
-    const chars = 'Il1O08B$S5';
-    s5String = Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    s9Views++;
+    const startBtn = document.getElementById('s5-start-btn');
+    startBtn.classList.add('hidden'); // 일단 숨김
+
+    // 첫 번째 조회일 때만 문자열을 새로 생성
+    if (s9Views === 1) {
+        const chars = '0123456789';
+        s5String = Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    }
+
     const flashArea = document.getElementById('s5-flash-area');
     flashArea.innerText = s5String;
     flashArea.classList.remove('hidden');
     setTimeout(() => {
         flashArea.classList.add('hidden');
         document.getElementById('s5-input-area').classList.remove('hidden');
+        
+        if (s9Views < 2) {
+            startBtn.innerText = "한 번 더 보기 (남은 기회: 1회)";
+            startBtn.classList.remove('hidden');
+        } else {
+            startBtn.classList.add('hidden');
+        }
+        
         document.getElementById('s5-input').focus();
     }, 1500);
 }
