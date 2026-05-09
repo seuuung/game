@@ -12,39 +12,95 @@
         body {
             font-family: 'Outfit', sans-serif;
             background: #0f172a;
-            /* Slate 900 */
             color: #f8fafc;
             overflow-x: hidden;
         }
 
-        /* background removed for performance */
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
 
         /* Glassmorphism panel */
         .glass-card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+            transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.05),
+                transparent
+            );
+            transition: 0.5s;
+        }
+
+        .glass-card:hover::before {
+            left: 100%;
         }
 
         .glass-card:hover {
             transform: translateY(-8px) scale(1.02);
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(6, 182, 212, 0.4);
-            /* Cyan 500 */
-            box-shadow: 0 20px 40px rgba(6, 182, 212, 0.2);
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
         }
 
         .neon-text {
-            text-shadow: 0 0 10px rgba(6, 182, 212, 0.6), 0 0 20px rgba(6, 182, 212, 0.4);
+            text-shadow: 0 0 15px rgba(6, 182, 212, 0.4);
         }
 
-        .coming-soon-card:hover {
-            border-color: rgba(255, 255, 255, 0.2);
-            box-shadow: 0 20px 40px rgba(255, 255, 255, 0.05);
-            transform: translateY(-4px);
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+            100% { transform: translate(0, 0) scale(1); }
+        }
+
+        .animate-float {
+            animation: float 20s infinite alternate ease-in-out;
+        }
+
+        .animate-float-delayed {
+            animation: float 25s infinite alternate-reverse ease-in-out;
+        }
+
+        /* Standardized Thumbnail */
+        .thumb-container {
+            width: 4rem; /* 64px */
+            height: 4rem;
+            flex-shrink: 0;
+        }
+
+        @media (min-width: 640px) {
+            .thumb-container {
+                width: 6rem; /* 96px */
+                height: 6rem;
+            }
         }
     </style>
 </head>
@@ -52,12 +108,15 @@
 <body
     class="bg-slate-900 min-h-screen flex flex-col items-center justify-center p-4 sm:p-8 relative selection:bg-cyan-500/30">
 
-    <!-- Ambient lights (Simplified for Performance) -->
+    <!-- Ambient lights -->
     <div
-        class="absolute top-0 left-0 w-64 h-64 bg-cyan-600/20 rounded-full mix-blend-screen filter blur-3xl opacity-40 pointer-events-none">
+        class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-cyan-600/10 rounded-full mix-blend-screen filter blur-[100px] opacity-40 pointer-events-none animate-float">
     </div>
     <div
-        class="absolute bottom-0 right-0 w-80 h-80 bg-purple-700/20 rounded-full mix-blend-screen filter blur-3xl opacity-30 pointer-events-none">
+        class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-700/10 rounded-full mix-blend-screen filter blur-[100px] opacity-30 pointer-events-none animate-float-delayed">
+    </div>
+    <div
+        class="absolute top-[20%] right-[10%] w-[30%] h-[30%] bg-blue-600/5 rounded-full mix-blend-screen filter blur-[80px] opacity-20 pointer-events-none animate-float">
     </div>
 
     <header class="mb-10 sm:mb-20 text-center z-10 w-full pt-8">
@@ -70,394 +129,263 @@
         </p>
     </header>
 
-    <main class="w-full max-w-7xl z-10 px-2 sm:px-4">
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
+    <main class="w-full max-w-7xl z-10 px-2 sm:px-4 flex flex-col gap-10 sm:gap-16">
 
-            <!-- Game Card 1 -->
-            <a href="games/slime_jump/index.html"
-                class="glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 flex flex-col group cursor-pointer block active:scale-[0.98]"
-                style="text-decoration: none;">
-                <div
-                    class="w-full aspect-video bg-gradient-to-br from-cyan-900 to-slate-900 rounded-xl sm:rounded-2xl mb-4 sm:mb-6 relative overflow-hidden flex items-center justify-center border border-cyan-500/20">
-                    <!-- Slime Icon Simulation -->
-                    <div
-                        class="w-16 h-16 bg-gradient-to-tr from-cyan-400 to-purple-500 rounded-t-full rounded-b-lg shadow-[0_0_30px_rgba(6,182,212,0.8)] relative">
-                        <div class="absolute top-4 left-3 w-3 h-3 bg-white rounded-full"></div>
-                        <div class="absolute top-4 right-3 w-3 h-3 bg-white rounded-full"></div>
+        <!-- Android App Section -->
+        <section class="w-full">
+            <h2 class="text-xl sm:text-2xl font-extrabold text-white mb-6 pl-2 flex items-center gap-3">
+                <span class="w-8 h-8 flex items-center justify-center bg-emerald-500/20 rounded-lg text-emerald-400 text-base">📱</span> 
+                모바일 앱
+            </h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                <a href="https://play.google.com/store/apps/details?id=spatialmine.app&pcampaignid=web_share" target="_blank" rel="noopener noreferrer"
+                    class="glass-card rounded-2xl p-4 sm:p-5 flex flex-row items-center gap-4 sm:gap-6 group cursor-pointer active:scale-[0.98] border border-emerald-500/20 hover:border-emerald-400/50"
+                    style="text-decoration: none; background: linear-gradient(145deg, rgba(16, 185, 129, 0.05) 0%, rgba(15, 23, 42, 0.1) 100%);">
+                    
+                    <div class="thumb-container bg-slate-800 rounded-xl sm:rounded-2xl p-0.5 shadow-[0_0_20px_rgba(16,185,129,0.1)] relative overflow-hidden flex items-center justify-center border border-slate-700/50 group-hover:shadow-[0_0_30px_rgba(16,185,129,0.25)] transition-all duration-500">
+                        <img src="https://play-lh.googleusercontent.com/NDMd9zUIMo1UIB-llPv68TL4A70FcR5AxStBSjIjG3Xb1GoxmAiB9Odf-Nve0WaRUwe0DtyBjT4Dk6GietDGnA" alt="Spatial Mine Icon" class="w-full h-full object-cover rounded-lg sm:rounded-xl group-hover:scale-110 transition-transform duration-500">
                     </div>
-                    <!-- Overlay -->
-                    <div
-                        class="absolute inset-0 bg-cyan-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    </div>
-                </div>
 
-                <h2 class="text-xl sm:text-2xl font-bold mb-2 text-white group-hover:text-cyan-300 transition-colors">
-                    슬라임 점프
-                </h2>
-                <p class="text-slate-400 text-xs sm:text-sm mb-5 sm:mb-6 flex-grow leading-relaxed line-clamp-3">
-                    벽을 튕기며 끝없이 위로 올라가는 중독성 강한 하이퍼 캐주얼 점프 게임. 부스트 구슬을 모아 우주로 향하세요!
-                </p>
-
-                <div class="flex items-center justify-between mt-auto">
-                    <span
-                        class="text-[10px] sm:text-xs font-semibold px-2 sm:px-3 py-1 bg-cyan-500/20 text-cyan-300 rounded-full border border-cyan-500/30">Arcade
-                        / Action</span>
-                    <button
-                        class="bg-white/10 group-hover:bg-cyan-500/50 text-white p-2 border border-white/10 group-hover:border-cyan-400/50 rounded-full transition-all backdrop-blur-md">
-                        <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none"
-                            stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7">
-                            </path>
-                        </svg>
-                    </button>
-                </div>
-            </a>
-
-            <!-- Game Card 2 -->
-            <a href="games/Magnetic_Orbit/index.html"
-                class="glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 flex flex-col group cursor-pointer block active:scale-[0.98]"
-                style="text-decoration: none;">
-                <div
-                    class="w-full aspect-video bg-gradient-to-br from-indigo-900 to-slate-900 rounded-xl sm:rounded-2xl mb-4 sm:mb-6 relative overflow-hidden flex items-center justify-center border border-indigo-500/20">
-                    <!-- Magnetic Orbit Icon Simulation -->
-                    <div
-                        class="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 shadow-[0_0_30px_rgba(6,182,212,0.8)] relative flex items-center justify-center">
-                        <div class="w-8 h-8 bg-black rounded-full"></div>
-                    </div>
-                    <!-- Overlay -->
-                    <div
-                        class="absolute inset-0 bg-indigo-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    </div>
-                </div>
-
-                <h2 class="text-2xl font-bold mb-2 text-white group-hover:text-indigo-300 transition-colors">궤도 생존
-                </h2>
-                <p class="text-slate-400 text-sm mb-6 flex-grow leading-relaxed">
-                    광활한 공간에서 다가오는 파편을 피하세요. 누르고 떼는 단순한 조작으로 중력과 원심력을 제어하는 아케이드 게임!
-                </p>
-
-                <div class="flex items-center justify-between mt-auto">
-                    <span
-                        class="text-[10px] sm:text-xs font-semibold px-2 sm:px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded-full border border-indigo-500/30">Arcade
-                        / Avoidance</span>
-                    <button
-                        class="bg-white/10 group-hover:bg-indigo-500/50 text-white p-2 border border-white/10 group-hover:border-indigo-400/50 rounded-full transition-all backdrop-blur-md">
-                        <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none"
-                            stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7">
-                            </path>
-                        </svg>
-                    </button>
-                </div>
-            </a>
-
-            <!-- Game Card 3 -->
-            <a href="games/maze_escape/index.html"
-                class="glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 flex flex-col group cursor-pointer block active:scale-[0.98]"
-                style="text-decoration: none;">
-                <div
-                    class="w-full aspect-video bg-gradient-to-br from-emerald-900 to-slate-900 rounded-xl sm:rounded-2xl mb-4 sm:mb-6 relative overflow-hidden flex items-center justify-center border border-emerald-500/20">
-                    <!-- Maze Icon Simulation -->
-                    <div
-                        class="w-16 h-16 bg-slate-800 rounded-xl shadow-[0_0_30px_rgba(16,185,129,0.5)] relative flex items-center justify-center overflow-hidden border-2 border-emerald-500/50">
-                        <div
-                            class="absolute inset-0 bg-[linear-gradient(rgba(16,185,129,0.3)_2px,transparent_2px),linear-gradient(90deg,rgba(16,185,129,0.3)_2px,transparent_2px)] bg-[size:8px_8px]">
+                    <div class="flex flex-col flex-grow text-left">
+                        <div class="flex flex-wrap items-center gap-2 mb-1.5">
+                            <h3 class="text-lg sm:text-xl font-bold text-white group-hover:text-emerald-300 transition-colors">Spatial Mine</h3>
+                            <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">Android</span>
                         </div>
-                        <div class="w-4 h-4 rounded-full bg-cyan-400 shadow-[0_0_15px_#22d3ee] z-10 animate-bounce">
+                        <p class="text-slate-400 text-xs sm:text-sm leading-relaxed mb-3 line-clamp-2 font-light">
+                            클래식 지뢰찾기가 3D로 돌아왔습니다. 큐브 속에 숨겨진 지뢰를 공간 지각 능력을 활용해 찾아내세요!
+                        </p>
+                        <div class="flex items-center text-emerald-400 text-xs font-bold gap-1.5 group-hover:translate-x-1 transition-transform">
+                            Google Play에서 확인
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
                         </div>
                     </div>
-                    <!-- Overlay -->
-                    <div
-                        class="absolute inset-0 bg-emerald-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    </div>
-                </div>
-
-                <h2
-                    class="text-xl sm:text-2xl font-bold mb-2 text-white group-hover:text-emerald-300 transition-colors">
-                    미로 탈출
-                </h2>
-                <p class="text-slate-400 text-xs sm:text-sm mb-5 sm:mb-6 flex-grow leading-relaxed line-clamp-3">
-                    3D 랜덤 미로를 탐험하며 탈출구를 찾으세요! 1인칭 탈출 게임.
-                </p>
-
-                <div class="flex items-center justify-between mt-auto">
-                    <span
-                        class="text-[10px] sm:text-xs font-semibold px-2 sm:px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded-full border border-emerald-500/30">Puzzle
-                        / Adventure</span>
-                    <button
-                        class="bg-white/10 group-hover:bg-emerald-500/50 text-white p-2 border border-white/10 group-hover:border-emerald-400/50 rounded-full transition-all backdrop-blur-md">
-                        <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none"
-                            stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7">
-                            </path>
-                        </svg>
-                    </button>
-                </div>
-            </a>
-
-            <!-- Game Card 4 -->
-            <a href="games/hacking/index.html"
-                class="glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 flex flex-col group cursor-pointer block active:scale-[0.98]"
-                style="text-decoration: none;">
-                <div
-                    class="w-full aspect-video bg-gradient-to-br from-purple-900 to-slate-900 rounded-xl sm:rounded-2xl mb-4 sm:mb-6 relative overflow-hidden flex items-center justify-center border border-purple-500/20">
-                    <!-- Hacking Icon Simulation -->
-                    <div
-                        class="w-20 h-14 bg-black rounded-lg shadow-[0_0_30px_rgba(168,85,247,0.5)] relative flex flex-col justify-start p-2 border border-purple-500/50">
-                        <div class="w-full h-2 flex gap-1 mb-1">
-                            <div class="w-2 h-2 rounded-full bg-red-500"></div>
-                            <div class="w-2 h-2 rounded-full bg-yellow-500"></div>
-                            <div class="w-2 h-2 rounded-full bg-green-500"></div>
-                        </div>
-                        <div class="font-[Courier] text-purple-400 text-xs font-bold mt-1">&gt;_</div>
-                    </div>
-                    <!-- Overlay -->
-                    <div
-                        class="absolute inset-0 bg-purple-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    </div>
-                </div>
-
-                <h2 class="text-xl sm:text-2xl font-bold mb-2 text-white group-hover:text-purple-300 transition-colors">
-                    리눅스 해커 CTF
-                </h2>
-                <p class="text-slate-400 text-xs sm:text-sm mb-5 sm:mb-6 flex-grow leading-relaxed line-clamp-3">
-                    리눅스 터미널 환경에서 숨겨진 단서를 찾고 시스템을 복구하는 4개의 해킹 시뮬레이션!
-                </p>
-
-                <div class="flex items-center justify-between mt-auto">
-                    <span
-                        class="text-[10px] sm:text-xs font-semibold px-2 sm:px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full border border-purple-500/30">Simulation
-                        / Puzzle</span>
-                    <button
-                        class="bg-white/10 group-hover:bg-purple-500/50 text-white p-2 border border-white/10 group-hover:border-purple-400/50 rounded-full transition-all backdrop-blur-md">
-                        <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none"
-                            stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7">
-                            </path>
-                        </svg>
-                    </button>
-                </div>
-            </a>
-
-            <!-- Game Card 5 -->
-            <a href="games/shadow_puzzle/index.html"
-                class="glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 flex flex-col group cursor-pointer block active:scale-[0.98]"
-                style="text-decoration: none;">
-                <div
-                    class="w-full aspect-video bg-gradient-to-br from-yellow-900 to-slate-900 rounded-xl sm:rounded-2xl mb-4 sm:mb-6 relative overflow-hidden flex items-center justify-center border border-yellow-500/20">
-                    <!-- Shadow Puzzle Icon Simulation -->
-                    <div
-                        class="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg shadow-[0_0_30px_rgba(234,179,8,0.5)] relative flex items-center justify-center transform group-hover:rotate-12 transition-transform duration-500">
-                        <div class="absolute inset-2 border-2 border-white/50 rounded pointer-events-none"></div>
-                        <div class="w-8 h-8 bg-black/40 rounded-sm shadow-inner"></div>
-                    </div>
-                    <!-- Overlay -->
-                    <div
-                        class="absolute inset-0 bg-yellow-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    </div>
-                </div>
-
-                <h2 class="text-xl sm:text-2xl font-bold mb-2 text-white group-hover:text-yellow-300 transition-colors">
-                    그림자 퍼즐
-                </h2>
-                <p class="text-slate-400 text-xs sm:text-sm mb-5 sm:mb-6 flex-grow leading-relaxed line-clamp-3">
-                    3D 형태의 블록을 요리조리 돌려가며 숨겨진 그림자를 찾아내는 공간 지각 퍼즐 게임!
-                </p>
-
-                <div class="flex items-center justify-between mt-auto">
-                    <span
-                        class="text-[10px] sm:text-xs font-semibold px-2 sm:px-3 py-1 bg-yellow-500/20 text-yellow-300 rounded-full border border-yellow-500/30">Puzzle
-                        / 3D</span>
-                    <button
-                        class="bg-white/10 group-hover:bg-yellow-500/50 text-white p-2 border border-white/10 group-hover:border-yellow-400/50 rounded-full transition-all backdrop-blur-md">
-                        <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none"
-                            stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7">
-                            </path>
-                        </svg>
-                    </button>
-                </div>
-            </a>
-
-            <!-- Game Card 6 -->
-            <a href="games/3D_ minesweeper/index.html"
-                class="glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 flex flex-col group cursor-pointer block active:scale-[0.98]"
-                style="text-decoration: none;">
-                <div
-                    class="w-full aspect-video bg-gradient-to-br from-red-900 to-slate-900 rounded-xl sm:rounded-2xl mb-4 sm:mb-6 relative overflow-hidden flex items-center justify-center border border-red-500/20">
-                    <!-- 3D Minesweeper Icon Simulation -->
-                    <div
-                        class="w-16 h-16 bg-gradient-to-br from-red-500 to-orange-600 rounded-xl shadow-[0_0_30px_rgba(239,68,68,0.6)] relative flex items-center justify-center transform group-hover:scale-110 transition-transform duration-500">
-                        <div class="text-3xl">💣</div>
-                    </div>
-                    <!-- Overlay -->
-                    <div
-                        class="absolute inset-0 bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    </div>
-                </div>
-
-                <h2 class="text-xl sm:text-2xl font-bold mb-2 text-white group-hover:text-red-300 transition-colors">
-                    3D 지뢰찾기
-                </h2>
-                <p class="text-slate-400 text-xs sm:text-sm mb-5 sm:mb-6 flex-grow leading-relaxed line-clamp-3">
-                    3차원 공간에서 펼쳐지는 입체 지뢰찾기 게임! 숨겨진 지뢰를 피해 모든 안전 구역을 찾아내세요.
-                </p>
-
-                <div class="flex items-center justify-between mt-auto">
-                    <span
-                        class="text-[10px] sm:text-xs font-semibold px-2 sm:px-3 py-1 bg-red-500/20 text-red-300 rounded-full border border-red-500/30">Puzzle
-                        / Board</span>
-                    <button
-                        class="bg-white/10 group-hover:bg-red-500/50 text-white p-2 border border-white/10 group-hover:border-red-400/50 rounded-full transition-all backdrop-blur-md">
-                        <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none"
-                            stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7">
-                            </path>
-                        </svg>
-                    </button>
-                </div>
-            </a>
-
-            <!-- Game Card 7 -->
-            <a href="games/sign_up_for_hell/index.html"
-                class="glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 flex flex-col group cursor-pointer block active:scale-[0.98]"
-                style="text-decoration: none;">
-                <div
-                    class="w-full aspect-video bg-gradient-to-br from-pink-900 to-slate-900 rounded-xl sm:rounded-2xl mb-4 sm:mb-6 relative overflow-hidden flex items-center justify-center border border-pink-500/20">
-                    <!-- Sign up Icon Simulation -->
-                    <div
-                        class="w-16 h-16 bg-gradient-to-br from-pink-500 to-rose-600 rounded-xl shadow-[0_0_30px_rgba(236,72,153,0.6)] relative flex items-center justify-center transform group-hover:scale-110 transition-transform duration-500">
-                        <div class="text-3xl">📝</div>
-                    </div>
-                    <!-- Overlay -->
-                    <div
-                        class="absolute inset-0 bg-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    </div>
-                </div>
-
-                <h2 class="text-xl sm:text-2xl font-bold mb-2 text-white group-hover:text-pink-300 transition-colors">
-                    정말 쾌적한 회원가입
-                </h2>
-                <p class="text-slate-400 text-xs sm:text-sm mb-5 sm:mb-6 flex-grow leading-relaxed line-clamp-3">
-                    우주에서 가장 빠르고 편리한(?) 회원가입 페이지에 도전해보세요! 당신의 인내심을 테스트합니다.
-                </p>
-
-                <div class="flex items-center justify-between mt-auto">
-                    <span
-                        class="text-[10px] sm:text-xs font-semibold px-2 sm:px-3 py-1 bg-pink-500/20 text-pink-300 rounded-full border border-pink-500/30">Meme
-                        / Fun</span>
-                    <button
-                        class="bg-white/10 group-hover:bg-pink-500/50 text-white p-2 border border-white/10 group-hover:border-pink-400/50 rounded-full transition-all backdrop-blur-md">
-                        <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none"
-                            stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7">
-                            </path>
-                        </svg>
-                    </button>
-                </div>
-            </a>
-
-            <!-- Game Card 8 -->
-            <a href="games/choi_circle/index.html"
-                class="glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 flex flex-col group cursor-pointer block active:scale-[0.98]"
-                style="text-decoration: none;">
-                <div
-                    class="w-full aspect-video bg-gradient-to-br from-red-900 to-slate-900 rounded-xl sm:rounded-2xl mb-4 sm:mb-6 relative overflow-hidden flex items-center justify-center border border-red-500/20">
-                    <!-- Choi Circle Icon Simulation -->
-                    <div
-                        class="w-16 h-16 bg-gradient-to-tr from-red-500 to-orange-400 rounded-full shadow-[0_0_30px_rgba(239,68,68,0.8)] relative flex items-center justify-center animate-pulse">
-                        <div class="text-white font-mono text-[10px] opacity-70 italic">$x^2+y^2=r^2$</div>
-                    </div>
-                    <!-- Overlay -->
-                    <div
-                        class="absolute inset-0 bg-red-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    </div>
-                </div>
-
-                <h2 class="text-xl sm:text-2xl font-bold mb-2 text-white group-hover:text-red-300 transition-colors">
-                    최원형
-                </h2>
-                <p class="text-slate-400 text-xs sm:text-sm mb-5 sm:mb-6 flex-grow leading-relaxed line-clamp-3">
-                    완벽한 동그라미의 진실을 파헤쳐보세요. 눈을 뗄 수 없는 원형의 매력속으로! 원형탈모 빔 주의.
-                </p>
-
-                <div class="flex items-center justify-between mt-auto">
-                    <span
-                        class="text-[10px] sm:text-xs font-semibold px-2 sm:px-3 py-1 bg-red-500/20 text-red-300 rounded-full border border-red-500/30">Meme
-                        / Circle</span>
-                    <button
-                        class="bg-white/10 group-hover:bg-red-500/50 text-white p-2 border border-white/10 group-hover:border-red-400/50 rounded-full transition-all backdrop-blur-md">
-                        <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none"
-                            stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7">
-                            </path>
-                        </svg>
-                    </button>
-                </div>
-            </a>
-
-            <!-- Game Card 9: Robot Game -->
-            <a href="games/robot/index.html"
-                class="glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 flex flex-col group cursor-pointer block active:scale-[0.98]"
-                style="text-decoration: none;">
-                <div
-                    class="w-full aspect-video bg-gradient-to-br from-blue-900 to-slate-900 rounded-xl sm:rounded-2xl mb-4 sm:mb-6 relative overflow-hidden flex items-center justify-center border border-blue-500/20">
-                    <!-- Robot Icon Simulation -->
-                    <div
-                        class="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-[0_0_30px_rgba(59,130,246,0.6)] relative flex items-center justify-center transform group-hover:scale-110 transition-transform duration-500">
-                        <div class="text-3xl">🤖</div>
-                    </div>
-                    <!-- Overlay -->
-                    <div
-                        class="absolute inset-0 bg-blue-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    </div>
-                </div>
-
-                <h2 class="text-xl sm:text-2xl font-bold mb-2 text-white group-hover:text-blue-300 transition-colors">
-                    당신은 로봇입니까?
-                </h2>
-                <p class="text-slate-400 text-xs sm:text-sm mb-5 sm:mb-6 flex-grow leading-relaxed line-clamp-3">
-                    당신은 정말 인간입니까? 10단계의 인증 절차를 통과하여 기계가 아님을 증명하십시오.
-                </p>
-
-                <div class="flex items-center justify-between mt-auto">
-                    <span
-                        class="text-[10px] sm:text-xs font-semibold px-2 sm:px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full border border-blue-500/30">Meme
-                        / Test</span>
-                    <button
-                        class="bg-white/10 group-hover:bg-blue-500/50 text-white p-2 border border-white/10 group-hover:border-blue-400/50 rounded-full transition-all backdrop-blur-md">
-                        <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none"
-                            stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7">
-                            </path>
-                        </svg>
-                    </button>
-                </div>
-            </a>
-
-            <!-- Coming Soon Card -->
-            <div class="glass-card coming-soon-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 flex flex-col opacity-50">
-                <div
-                    class="w-full aspect-video bg-slate-800/40 rounded-xl sm:rounded-2xl mb-4 sm:mb-6 relative overflow-hidden flex items-center justify-center border border-slate-700/50">
-                    <svg class="w-10 h-10 sm:w-12 sm:h-12 text-slate-600" fill="none" stroke="currentColor"
-                        viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                            d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                    </svg>
-                </div>
-
-                <h2 class="text-xl sm:text-2xl font-bold mb-2 text-slate-400">Coming Soon</h2>
-                <p class="text-slate-500 text-xs sm:text-sm mb-5 sm:mb-6 flex-grow leading-relaxed line-clamp-3">
-                    새로운 게임이 준비 중입니다. 어떤 게임이 추가될지 기대해 주세요!
-                </p>
-
-                <div class="flex items-center justify-between mt-auto">
-                    <span
-                        class="text-[10px] sm:text-xs font-semibold px-2 sm:px-3 py-1 bg-slate-800 text-slate-400 rounded-full border border-slate-700">Mystery</span>
-                </div>
+                </a>
             </div>
+        </section>
+
+        <!-- Web Games Section -->
+        <section class="w-full">
+            <h2 class="text-xl sm:text-2xl font-extrabold text-white mb-6 pl-2 flex items-center gap-3">
+                <span class="w-8 h-8 flex items-center justify-center bg-cyan-500/20 rounded-lg text-cyan-400 text-base">🎮</span> 
+                웹 게임 실험실
+            </h2>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+                <!-- Game Card 1: Slime Jump -->
+                <a href="games/slime_jump/index.html" class="glass-card rounded-2xl p-4 sm:p-5 flex flex-row items-center gap-4 sm:gap-6 group cursor-pointer active:scale-[0.98]">
+                    <div class="thumb-container bg-gradient-to-br from-cyan-900/40 to-slate-900 rounded-xl sm:rounded-2xl relative overflow-hidden flex items-center justify-center border border-cyan-500/20 group-hover:border-cyan-400/50 shadow-lg">
+                        <div class="w-10 h-10 sm:w-14 sm:h-14 bg-gradient-to-tr from-cyan-400 to-blue-500 rounded-t-full rounded-b-lg shadow-[0_0_20px_rgba(6,182,212,0.4)] relative">
+                            <div class="absolute top-2 left-2 w-1.5 h-1.5 bg-white rounded-full"></div>
+                            <div class="absolute top-2 right-2 w-1.5 h-1.5 bg-white rounded-full"></div>
+                        </div>
+                    </div>
+                    <div class="flex flex-col flex-grow text-left">
+                        <div class="flex flex-wrap items-center gap-2 mb-1.5">
+                            <h3 class="text-lg sm:text-xl font-bold text-white group-hover:text-cyan-300 transition-colors">슬라임 점프</h3>
+                            <span class="text-[10px] font-bold px-2 py-0.5 bg-cyan-500/10 text-cyan-300 rounded-md border border-cyan-500/20 uppercase tracking-wider">Arcade</span>
+                        </div>
+                        <p class="text-slate-400 text-xs sm:text-sm leading-relaxed mb-3 line-clamp-2 font-light">
+                            벽을 튕기며 끝없이 위로! 부스트 구슬을 모아 광활한 우주까지 도달해보세요.
+                        </p>
+                        <div class="flex items-center text-cyan-400 text-xs font-bold gap-1.5 group-hover:translate-x-1 transition-transform">
+                            플레이하기
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- Game Card 2: Magnetic Orbit -->
+                <a href="games/Magnetic_Orbit/index.html" class="glass-card rounded-2xl p-4 sm:p-5 flex flex-row items-center gap-4 sm:gap-6 group cursor-pointer active:scale-[0.98]">
+                    <div class="thumb-container bg-gradient-to-br from-indigo-900/40 to-slate-900 rounded-xl sm:rounded-2xl relative overflow-hidden flex items-center justify-center border border-indigo-500/20 group-hover:border-indigo-400/50 shadow-lg">
+                        <div class="w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-indigo-400 to-purple-600 shadow-[0_0_20px_rgba(99,102,241,0.4)] relative flex items-center justify-center">
+                            <div class="w-5 h-5 sm:w-7 sm:h-7 bg-slate-900 rounded-full"></div>
+                        </div>
+                    </div>
+                    <div class="flex flex-col flex-grow text-left">
+                        <div class="flex flex-wrap items-center gap-2 mb-1.5">
+                            <h3 class="text-lg sm:text-xl font-bold text-white group-hover:text-indigo-300 transition-colors">궤도 생존</h3>
+                            <span class="text-[10px] font-bold px-2 py-0.5 bg-indigo-500/10 text-indigo-300 rounded-md border border-indigo-500/20 uppercase tracking-wider">Arcade</span>
+                        </div>
+                        <p class="text-slate-400 text-xs sm:text-sm leading-relaxed mb-3 line-clamp-2 font-light">
+                            중력과 원심력을 제어하여 다가오는 우주 파편들 사이에서 살아남으세요.
+                        </p>
+                        <div class="flex items-center text-indigo-400 text-xs font-bold gap-1.5 group-hover:translate-x-1 transition-transform">
+                            플레이하기
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- Game Card 3: Maze Escape -->
+                <a href="games/maze_escape/index.html" class="glass-card rounded-2xl p-4 sm:p-5 flex flex-row items-center gap-4 sm:gap-6 group cursor-pointer active:scale-[0.98]">
+                    <div class="thumb-container bg-gradient-to-br from-emerald-900/40 to-slate-900 rounded-xl sm:rounded-2xl relative overflow-hidden flex items-center justify-center border border-emerald-500/20 group-hover:border-emerald-400/50 shadow-lg">
+                        <div class="w-10 h-10 sm:w-14 sm:h-14 bg-slate-800 rounded-lg shadow-[0_0_15px_rgba(16,185,129,0.3)] relative flex items-center justify-center overflow-hidden border border-emerald-500/30">
+                            <div class="absolute inset-0 bg-[linear-gradient(rgba(16,185,129,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(16,185,129,0.1)_1px,transparent_1px)] bg-[size:4px_4px]"></div>
+                            <div class="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-emerald-400 shadow-[0_0_10px_#34d399] z-10 animate-bounce"></div>
+                        </div>
+                    </div>
+                    <div class="flex flex-col flex-grow text-left">
+                        <div class="flex flex-wrap items-center gap-2 mb-1.5">
+                            <h3 class="text-lg sm:text-xl font-bold text-white group-hover:text-emerald-300 transition-colors">미로 탈출</h3>
+                            <span class="text-[10px] font-bold px-2 py-0.5 bg-emerald-500/10 text-emerald-300 rounded-md border border-emerald-500/20 uppercase tracking-wider">Puzzle</span>
+                        </div>
+                        <p class="text-slate-400 text-xs sm:text-sm leading-relaxed mb-3 line-clamp-2 font-light">
+                            랜덤하게 생성되는 3D 미로! 1인칭 시점으로 출구를 향한 긴박한 여정을 떠나세요.
+                        </p>
+                        <div class="flex items-center text-emerald-400 text-xs font-bold gap-1.5 group-hover:translate-x-1 transition-transform">
+                            플레이하기
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- Game Card 4: Linux CTF -->
+                <a href="games/hacking/index.html" class="glass-card rounded-2xl p-4 sm:p-5 flex flex-row items-center gap-4 sm:gap-6 group cursor-pointer active:scale-[0.98]">
+                    <div class="thumb-container bg-gradient-to-br from-purple-900/40 to-slate-900 rounded-xl sm:rounded-2xl relative overflow-hidden flex items-center justify-center border border-purple-500/20 group-hover:border-purple-400/50 shadow-lg">
+                        <div class="w-10 h-8 sm:w-14 sm:h-11 bg-black rounded border border-purple-500/30 p-1 flex flex-col">
+                            <div class="flex gap-0.5 mb-0.5"><div class="w-0.5 h-0.5 sm:w-1 sm:h-1 rounded-full bg-red-500"></div><div class="w-0.5 h-0.5 sm:w-1 sm:h-1 rounded-full bg-green-500"></div></div>
+                            <div class="font-mono text-purple-400 text-[6px] sm:text-[9px] leading-none">&gt;_ ctf</div>
+                        </div>
+                    </div>
+                    <div class="flex flex-col flex-grow text-left">
+                        <div class="flex flex-wrap items-center gap-2 mb-1.5">
+                            <h3 class="text-lg sm:text-xl font-bold text-white group-hover:text-purple-300 transition-colors">해커 CTF</h3>
+                            <span class="text-[10px] font-bold px-2 py-0.5 bg-purple-500/10 text-purple-300 rounded-md border border-purple-500/20 uppercase tracking-wider">Simulation</span>
+                        </div>
+                        <p class="text-slate-400 text-xs sm:text-sm leading-relaxed mb-3 line-clamp-2 font-light">
+                            리눅스 터미널 환경에서 숨겨진 단서를 찾고 시스템을 복구하는 해킹 시뮬레이션!
+                        </p>
+                        <div class="flex items-center text-purple-400 text-xs font-bold gap-1.5 group-hover:translate-x-1 transition-transform">
+                            플레이하기
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- Game Card 5: Shadow Puzzle -->
+                <a href="games/shadow_puzzle/index.html" class="glass-card rounded-2xl p-4 sm:p-5 flex flex-row items-center gap-4 sm:gap-6 group cursor-pointer active:scale-[0.98]">
+                    <div class="thumb-container bg-gradient-to-br from-yellow-900/40 to-slate-900 rounded-xl sm:rounded-2xl relative overflow-hidden flex items-center justify-center border border-yellow-500/20 group-hover:border-yellow-400/50 shadow-lg">
+                        <div class="w-10 h-10 sm:w-14 sm:h-14 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg shadow-[0_0_15px_rgba(234,179,8,0.3)] relative flex items-center justify-center transform group-hover:rotate-12 transition-transform duration-500">
+                            <div class="w-4 h-4 sm:w-6 sm:h-6 bg-black/40 rounded-sm"></div>
+                        </div>
+                    </div>
+                    <div class="flex flex-col flex-grow text-left">
+                        <div class="flex flex-wrap items-center gap-2 mb-1.5">
+                            <h3 class="text-lg sm:text-xl font-bold text-white group-hover:text-yellow-300 transition-colors">그림자 퍼즐</h3>
+                            <span class="text-[10px] font-bold px-2 py-0.5 bg-yellow-500/10 text-yellow-300 rounded-md border border-yellow-500/20 uppercase tracking-wider">Puzzle</span>
+                        </div>
+                        <p class="text-slate-400 text-xs sm:text-sm leading-relaxed mb-3 line-clamp-2 font-light">
+                            3D 블록을 돌려가며 숨겨진 그림자를 찾아내는 공간 지각 퍼즐 게임!
+                        </p>
+                        <div class="flex items-center text-yellow-400 text-xs font-bold gap-1.5 group-hover:translate-x-1 transition-transform">
+                            플레이하기
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- Game Card 6: 3D Minesweeper -->
+                <a href="games/3D_ minesweeper/index.html" class="glass-card rounded-2xl p-4 sm:p-5 flex flex-row items-center gap-4 sm:gap-6 group cursor-pointer active:scale-[0.98]">
+                    <div class="thumb-container bg-gradient-to-br from-red-900/40 to-slate-900 rounded-xl sm:rounded-2xl relative overflow-hidden flex items-center justify-center border border-red-500/20 group-hover:border-red-400/50 shadow-lg">
+                        <div class="w-10 h-10 sm:w-14 sm:h-14 bg-gradient-to-br from-red-500 to-orange-600 rounded-lg shadow-[0_0_15px_rgba(239,68,68,0.3)] relative flex items-center justify-center transform group-hover:scale-110 transition-transform duration-500 text-xl sm:text-3xl">
+                            💣
+                        </div>
+                    </div>
+                    <div class="flex flex-col flex-grow text-left">
+                        <div class="flex flex-wrap items-center gap-2 mb-1.5">
+                            <h3 class="text-lg sm:text-xl font-bold text-white group-hover:text-red-300 transition-colors">3D 지뢰찾기</h3>
+                            <span class="text-[10px] font-bold px-2 py-0.5 bg-red-500/10 text-red-300 rounded-md border border-red-500/20 uppercase tracking-wider">Puzzle</span>
+                        </div>
+                        <p class="text-slate-400 text-xs sm:text-sm leading-relaxed mb-3 line-clamp-2 font-light">
+                            3차원 공간에서 펼쳐지는 입체 지뢰찾기! 숨겨진 지뢰를 피해 안전 구역을 찾으세요.
+                        </p>
+                        <div class="flex items-center text-red-400 text-xs font-bold gap-1.5 group-hover:translate-x-1 transition-transform">
+                            플레이하기
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- Game Card 7: Sign up for Hell -->
+                <a href="games/sign_up_for_hell/index.html" class="glass-card rounded-2xl p-4 sm:p-5 flex flex-row items-center gap-4 sm:gap-6 group cursor-pointer active:scale-[0.98]">
+                    <div class="thumb-container bg-gradient-to-br from-pink-900/40 to-slate-900 rounded-xl sm:rounded-2xl relative overflow-hidden flex items-center justify-center border border-pink-500/20 group-hover:border-pink-400/50 shadow-lg">
+                        <div class="w-10 h-10 sm:w-14 sm:h-14 bg-gradient-to-br from-pink-500 to-rose-600 rounded-lg shadow-[0_0_20px_rgba(236,72,153,0.5)] relative flex items-center justify-center transform group-hover:scale-110 transition-transform duration-500 text-2xl sm:text-4xl">
+                            📝
+                        </div>
+                    </div>
+                    <div class="flex flex-col flex-grow text-left">
+                        <div class="flex flex-wrap items-center gap-2 mb-1.5">
+                            <h3 class="text-lg sm:text-xl font-bold text-white group-hover:text-pink-300 transition-colors">지옥의 회원가입</h3>
+                            <span class="text-[10px] font-bold px-2 py-0.5 bg-pink-500/10 text-pink-300 rounded-md border border-pink-500/20 uppercase tracking-wider">Meme</span>
+                        </div>
+                        <p class="text-slate-400 text-xs sm:text-sm leading-relaxed mb-3 line-clamp-2 font-light">
+                            우주에서 가장 빠르고 편리한(?) 회원가입 페이지! 당신의 인내심을 테스트해보세요.
+                        </p>
+                        <div class="flex items-center text-pink-400 text-xs font-bold gap-1.5 group-hover:translate-x-1 transition-transform">
+                            플레이하기
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- Game Card 8: Choi Circle -->
+                <a href="games/choi_circle/index.html" class="glass-card rounded-2xl p-4 sm:p-5 flex flex-row items-center gap-4 sm:gap-6 group cursor-pointer active:scale-[0.98]">
+                    <div class="thumb-container bg-gradient-to-br from-red-900/40 to-slate-900 rounded-xl sm:rounded-2xl relative overflow-hidden flex items-center justify-center border border-red-500/20 group-hover:border-red-400/50 shadow-lg">
+                        <div class="w-10 h-10 sm:w-14 sm:h-14 bg-gradient-to-tr from-red-500 to-orange-400 rounded-full shadow-[0_0_20px_rgba(239,68,68,0.7)] relative flex items-center justify-center animate-pulse">
+                            <div class="text-white font-mono text-[7px] sm:text-[10px] opacity-70 italic">$r^2$</div>
+                        </div>
+                    </div>
+                    <div class="flex flex-col flex-grow text-left">
+                        <div class="flex flex-wrap items-center gap-2 mb-1.5">
+                            <h3 class="text-lg sm:text-xl font-bold text-white group-hover:text-red-300 transition-colors">최원형</h3>
+                            <span class="text-[10px] font-bold px-2 py-0.5 bg-red-500/10 text-red-300 rounded-md border border-red-500/20 uppercase tracking-wider">Meme</span>
+                        </div>
+                        <p class="text-slate-400 text-xs sm:text-sm leading-relaxed mb-3 line-clamp-2 font-light">
+                            완벽한 동그라미의 진실을 파헤쳐보세요. 원형탈모 빔 주의!
+                        </p>
+                        <div class="flex items-center text-red-400 text-xs font-bold gap-1.5 group-hover:translate-x-1 transition-transform">
+                            플레이하기
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- Game Card 9: Robot Game -->
+                <a href="games/robot/index.html" class="glass-card rounded-2xl p-4 sm:p-5 flex flex-row items-center gap-4 sm:gap-6 group cursor-pointer active:scale-[0.98]">
+                    <div class="thumb-container bg-gradient-to-br from-blue-900/40 to-slate-900 rounded-xl sm:rounded-2xl relative overflow-hidden flex items-center justify-center border border-blue-500/20 group-hover:border-blue-400/50 shadow-lg">
+                        <div class="w-10 h-10 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg shadow-[0_0_15px_rgba(59,130,246,0.3)] relative flex items-center justify-center transform group-hover:scale-110 transition-transform duration-500 text-xl sm:text-3xl">
+                            🤖
+                        </div>
+                    </div>
+                    <div class="flex flex-col flex-grow text-left">
+                        <div class="flex flex-wrap items-center gap-2 mb-1.5">
+                            <h3 class="text-lg sm:text-xl font-bold text-white group-hover:text-blue-300 transition-colors">로봇 인증</h3>
+                            <span class="text-[10px] font-bold px-2 py-0.5 bg-blue-500/10 text-blue-300 rounded-md border border-blue-500/20 uppercase tracking-wider">Meme</span>
+                        </div>
+                        <p class="text-slate-400 text-xs sm:text-sm leading-relaxed mb-3 line-clamp-2 font-light">
+                            당신은 정말 인간입니까? 10단계의 인증 절차를 통해 증명하십시오.
+                        </p>
+                        <div class="flex items-center text-blue-400 text-xs font-bold gap-1.5 group-hover:translate-x-1 transition-transform">
+                            플레이하기
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- Coming Soon Card -->
+                <div class="glass-card rounded-2xl p-4 sm:p-5 flex flex-row items-center gap-4 sm:gap-6 opacity-40">
+                    <div class="thumb-container bg-slate-800/40 rounded-xl sm:rounded-2xl flex items-center justify-center border border-slate-700/50">
+                        <svg class="w-6 h-6 sm:w-10 sm:h-10 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                    </div>
+                    <div class="flex flex-col flex-grow text-left">
+                        <h3 class="text-lg sm:text-xl font-bold text-slate-400 mb-1">Coming Soon</h3>
+                        <p class="text-slate-500 text-xs sm:text-sm font-light">새로운 실험이 진행 중입니다...</p>
+                    </div>
+                </div>
 
         </div>
+        </section>
     </main>
 
     <footer class="mt-20 z-10 text-center">
