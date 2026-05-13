@@ -14,6 +14,7 @@
             background: #0f172a;
             color: #f8fafc;
             overflow-x: hidden;
+            word-break: keep-all;
         }
 
         /* Custom Scrollbar */
@@ -125,7 +126,7 @@
             <span class="text-white"> 실험실</span>
         </h1>
         <p class="text-slate-400 text-lg sm:text-xl font-light tracking-wide max-w-lg mx-auto">
-            사이드 프로젝트 게임들을 즐겨보세요!
+            사이드 프로젝트를 즐겨보세요!
         </p>
     </header>
 
@@ -139,6 +140,28 @@
             </h2>
             
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                <a href="https://play.google.com/store/apps/details?id=com.onsic.app&pcampaignid=web_share" target="_blank" rel="noopener noreferrer"
+                    class="glass-card rounded-2xl p-4 sm:p-5 flex flex-row items-center gap-4 sm:gap-6 group cursor-pointer active:scale-[0.98] border border-rose-500/20 hover:border-rose-400/50"
+                    style="text-decoration: none; background: linear-gradient(145deg, rgba(244, 63, 94, 0.05) 0%, rgba(15, 23, 42, 0.1) 100%);">
+                    
+                    <div class="thumb-container bg-slate-800 rounded-xl sm:rounded-2xl p-0.5 shadow-[0_0_20px_rgba(244,63,94,0.1)] relative overflow-hidden flex items-center justify-center border border-slate-700/50 group-hover:shadow-[0_0_30px_rgba(244,63,94,0.25)] transition-all duration-500">
+                        <img src="https://play-lh.googleusercontent.com/aoFVXWjaN94lLAI_YDBSsKmFSbiRVYn5sVtIR0iz1QiHtl0ndmBuCaK7dcmlpV6a2jpUFpYmJ9MQ1xT1B4xCPw=w512-h512-rw" alt="OnSic Icon" class="w-full h-full object-cover rounded-lg sm:rounded-xl group-hover:scale-110 transition-transform duration-500">
+                    </div>
+
+                    <div class="flex flex-col flex-grow text-left">
+                        <div class="flex flex-wrap items-center gap-2 mb-1.5">
+                            <h3 class="text-lg sm:text-xl font-bold text-white group-hover:text-rose-300 transition-colors">온식 (OnSic)</h3>
+                            <span class="bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">Android</span>
+                        </div>
+                        <p class="text-slate-400 text-xs sm:text-sm leading-relaxed mb-3 line-clamp-2 font-light">
+                            갤러리에 쌓여만 가는 음식 사진들을 관리하는 식단 아카이빙 솔루션입니다. 정갈한 식단 캘린더와 데이터 리포트로 재탄생시키세요.
+                        </p>
+                        <div class="flex items-center text-rose-400 text-xs font-bold gap-1.5 group-hover:translate-x-1 transition-transform">
+                            Google Play에서 확인
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                        </div>
+                    </div>
+                </a>
                 <a href="https://play.google.com/store/apps/details?id=spatialmine.app&pcampaignid=web_share" target="_blank" rel="noopener noreferrer"
                     class="glass-card rounded-2xl p-4 sm:p-5 flex flex-row items-center gap-4 sm:gap-6 group cursor-pointer active:scale-[0.98] border border-emerald-500/20 hover:border-emerald-400/50"
                     style="text-decoration: none; background: linear-gradient(145deg, rgba(16, 185, 129, 0.05) 0%, rgba(15, 23, 42, 0.1) 100%);">
