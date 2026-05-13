@@ -312,7 +312,7 @@ cmdInput.addEventListener('keydown', function (e) {
         if (gameState === 'BOOT_MENU') {
             print(`<div>${promptSpan.innerHTML} ${inputVal}</div>`);
 
-            if (['0', '1', '2', '3', '4', '5', '6'].includes(inputVal)) { // Updated to include new scenarios 0 and 1
+            if (['1', '2', '3', '4', '5', '6', '7'].includes(inputVal)) {
                 loadScenario(parseInt(inputVal));
             } else print("Invalid choice.", "error");
             return;
@@ -394,7 +394,7 @@ function executeCommand(input, pipeInput, printOutput) {
 
     switch (cmd) {
         case 'help':
-            outData = "Available commands:\n ls [-a] [-l] [dir] : List directory contents\n cd [dir]           : Change directory\n cat [file]         : Print file content\n su [user]          : Substitute user identity\n base64 -d [file]   : Decode base64 data\n tr [opt]           : Translate characters (e.g. tr 'A-Za-z' 'N-ZA-Mn-za-m' for ROT13)\n crack [opt] [file] : Bruteforce hash utility\n netstat -tuln      : Print network connections\n find [path] -name  : Find files by name\n grep [keyword]     : Filter output\n jwt-forge [opt]    : Forge tokens (CTF tool)\n curl [url]         : Transfer data from server\n hint               : Get a hint\n reboot             : Restart system";
+            outData = "Available commands:\n\n [📁 File & Navigation]\n  ls [-a] [-l] [dir]  : List directory contents\n  cd [dir]            : Change directory\n  cat [file]          : Print file content\n  head [-n N] [file]  : Print first N lines\n  tail [-n N] [file]  : Print last N lines\n  find [path] -name   : Find files by name\n  file [path]         : Determine file type\n  strings [file]      : Extract readable strings\n  touch [file]        : Create empty file\n  mkdir [dir]         : Create directory\n  rm [file]           : Remove file\n  cp [src] [dst]      : Copy file\n  chmod [mode] [file] : Change permissions (root)\n\n [📝 Text Processing]\n  echo [text]         : Print text\n  grep [keyword]      : Filter lines by keyword\n  sort [file]         : Sort lines\n  uniq [file]         : Remove duplicate lines\n  wc [file]           : Count lines/words/bytes\n  base64 -d [file]    : Decode base64 data\n  tr [set1] [set2]    : Translate characters\n\n [🖥️ System Info]\n  whoami / id         : User identity info\n  pwd                 : Working directory\n  uname [-a]          : System info\n  hostname / date     : Host name / Date-time\n  env / printenv      : Environment variables\n  ps [aux]            : List processes\n  history             : Command history\n  man [cmd]           : Manual page\n\n [🌐 Network]\n  netstat -tuln       : Network connections\n  ifconfig            : Network interfaces\n  ping [host]         : Test connectivity\n  ssh [user@host]     : SSH connection\n  wget / curl [url]   : Transfer data\n\n [🔧 CTF Tools]\n  crack [opts] [file] : Hash bruteforce\n  jwt-forge [opts]    : Forge JWT tokens\n  su [user]           : Switch user\n  hint                : Get a hint\n  clear / reboot      : Clear screen / Restart";
             break;
         case 'grep':
             if (args.length < 2) { print("Usage: grep [keyword]", "error"); return null; }
@@ -530,16 +530,15 @@ function executeCommand(input, pipeInput, printOutput) {
                 cmdInput.disabled = true;
                 print("Loading rainbow tables and executing attack...");
                 setTimeout(() => {
-                    if (scenarioId === 2 && wordlist.includes("rockyou.txt") && salt === scenarioData.password.substring(0, 0) /* Dummy check, salt match */) {
-                        // Checking if the actual salt matches the required one
+                    if (scenarioId === 4 && wordlist.includes("rockyou.txt")) {
                         const actualSalt = fileSystem.opt[".env"].content.match(/HASH_SALT=(.+)/)[1];
                         if (salt === actualSalt) {
                             print(`[+] SUCCESS! Hash cracked! admin : ${scenarioData.password}`, "success");
                         } else {
-                            print("crack: Attack failed. Incorrect salt or wordlist.");
+                            print("crack: Attack failed. Incorrect salt value. (hint: find / -name *.env*)", "error");
                         }
                     } else {
-                        print("crack: Attack failed. Check arguments.");
+                        print("crack: Attack failed. Check arguments (--salt, --wordlist required).", "error");
                     }
                     cmdInput.disabled = false;
                     cmdInput.focus();
@@ -562,22 +561,217 @@ function executeCommand(input, pipeInput, printOutput) {
         case 'netstat':
             if (args[1] === '-tuln') {
                 outData = "Active Internet connections\nProto Local Address           State\ntcp   0.0.0.0:22              LISTEN";
-                if (scenarioId === 3) outData += `\ntcp   127.0.0.1:${scenarioData.port}       LISTEN`;
+                if (scenarioId === 5) outData += `\ntcp   127.0.0.1:${scenarioData.port}       LISTEN`;
             } else print("Usage: netstat -tuln");
             break;
         case 'curl':
-            const url = args[lastIdx = args.length - 1];
+            const url = args[args.length - 1];
             let authHeader = "";
-            if (args[1] === '-H') authHeader = args[2];
-            if (scenarioId === 3 && url.includes(`127.0.0.1:${scenarioData.port}`)) {
+            // -H 옵션 파싱: curl -H "Authorization: Bearer TOKEN" URL
+            for (let ci = 1; ci < args.length - 1; ci++) {
+                if (args[ci] === '-H' && args[ci + 1]) { authHeader = args[ci + 1]; ci++; }
+            }
+            if (scenarioId === 5 && url.includes(`127.0.0.1:${scenarioData.port}`) && url.includes('/unlock')) {
+                // jwt-forge가 생성하는 토큰 형식: header.payload.signature
+                // signature = btoa(secret) 형식이므로, 토큰에서 서명 부분을 추출하여 검증
                 const expectedSig = btoa(scenarioData.secret);
-                if (authHeader.includes('Bearer') && authHeader.includes(`"role":"admin"`) || authHeader.includes(expectedSig)) {
+                const hasBearer = authHeader.includes('Bearer');
+                const hasAdminRole = authHeader.includes('admin');
+                const hasValidSig = authHeader.includes(expectedSig);
+                if (hasBearer && hasAdminRole && hasValidSig) {
                     winGame("API call authorized with forged JWT. Core unlocked remotely.");
                 } else {
-                    outData = `{"error": "Unauthorized. Invalid JWT signature or role."}`;
+                    if (!hasBearer) outData = `{"error": "Missing Authorization header."}`;
+                    else if (!hasAdminRole) outData = `{"error": "Insufficient role. Admin role required."}`;
+                    else outData = `{"error": "Invalid JWT signature."}`;
                 }
+            } else if (scenarioId === 5 && url.includes(`127.0.0.1:${scenarioData.port}`)) {
+                outData = `{"error": "404 Not Found. Try /unlock endpoint."}`;
             } else outData = `curl: (7) Failed to connect to port`;
             break;
+        // === 텍스트 출력 / 시스템 정보 ===
+        case 'echo':
+            outData = args.slice(1).join(' ');
+            break;
+        case 'id':
+            if (currentUser === 'root') outData = 'uid=0(root) gid=0(root) groups=0(root)';
+            else if (currentUser === 'admin') outData = 'uid=1000(admin) gid=1000(admin) groups=1000(admin),27(sudo)';
+            else outData = 'uid=1001(guest) gid=1001(guest) groups=1001(guest)';
+            break;
+        case 'uname':
+            if (args.includes('-a')) outData = 'Linux linux-core 5.15.0-56-generic #62-Ubuntu SMP x86_64 GNU/Linux';
+            else outData = 'Linux';
+            break;
+        case 'hostname':
+            outData = 'linux-core';
+            break;
+        case 'date':
+            outData = new Date().toString();
+            break;
+        // === 텍스트 처리 (파이프 지원) ===
+        case 'head':
+        case 'tail': {
+            let htN = 10, htContent = pipeInput;
+            for (let hi = 1; hi < args.length; hi++) {
+                if (args[hi] === '-n' && args[hi + 1]) { htN = parseInt(args[hi + 1]); hi++; }
+                else if (/^-\d+$/.test(args[hi])) htN = parseInt(args[hi].substring(1));
+                else if (!args[hi].startsWith('-')) {
+                    const htF = getTargetNode(resolvePath(args[hi]));
+                    if (htF && htF._type === 'file' && checkPerm(htF, currentUser, 'read')) htContent = htF.content;
+                    else { print(`${cmd}: ${args[hi]}: No such file`, "error"); return null; }
+                }
+            }
+            if (!htContent) { print(`${cmd}: missing input`, "error"); return null; }
+            const htLines = htContent.split('\n');
+            outData = cmd === 'head' ? htLines.slice(0, htN).join('\n') : htLines.slice(-htN).join('\n');
+            break;
+        }
+        case 'wc': {
+            let wcContent = pipeInput, wcLabel = '';
+            if (args[1] && !args[1].startsWith('-')) {
+                const wcF = getTargetNode(resolvePath(args[1]));
+                if (wcF && wcF._type === 'file') { wcContent = wcF.content; wcLabel = ' ' + args[1]; }
+                else { print(`wc: ${args[1]}: No such file`, "error"); return null; }
+            }
+            if (!wcContent) { print("wc: missing input", "error"); return null; }
+            outData = `  ${wcContent.split('\n').length}  ${wcContent.split(/\s+/).filter(w => w).length} ${wcContent.length}${wcLabel}`;
+            break;
+        }
+        case 'sort': {
+            let sortContent = pipeInput;
+            if (args[1] && !args[1].startsWith('-')) {
+                const sF = getTargetNode(resolvePath(args[1]));
+                if (sF && sF._type === 'file') sortContent = sF.content;
+                else { print(`sort: ${args[1]}: No such file`, "error"); return null; }
+            }
+            if (!sortContent) { print("sort: missing input", "error"); return null; }
+            const sLines = sortContent.split('\n');
+            args.includes('-r') ? sLines.sort().reverse() : sLines.sort();
+            outData = sLines.join('\n');
+            break;
+        }
+        case 'uniq': {
+            let uContent = pipeInput;
+            if (args[1] && !args[1].startsWith('-')) {
+                const uF = getTargetNode(resolvePath(args[1]));
+                if (uF && uF._type === 'file') uContent = uF.content;
+                else { print(`uniq: ${args[1]}: No such file`, "error"); return null; }
+            }
+            if (!uContent) { print("uniq: missing input", "error"); return null; }
+            const uLines = uContent.split('\n');
+            outData = uLines.filter((l, i) => i === 0 || l !== uLines[i - 1]).join('\n');
+            break;
+        }
+        // === 파일 조작 ===
+        case 'touch': {
+            if (args.length < 2) { print("touch: missing file operand", "error"); return null; }
+            const tPath = resolvePath(args[1]); const tName = tPath.pop();
+            const tParent = getTargetNode(tPath);
+            if (!tParent || tParent._type !== 'dir') { print(`touch: cannot touch '${args[1]}': No such directory`, "error"); return null; }
+            if (!tParent[tName]) tParent[tName] = { _type: "file", perms: "-rw-r--r--", owner: currentUser, content: "", size: "0", date: "Today" };
+            return null;
+        }
+        case 'mkdir': {
+            if (args.length < 2) { print("mkdir: missing operand", "error"); return null; }
+            const mPath = resolvePath(args[1]); const mName = mPath.pop();
+            const mParent = getTargetNode(mPath);
+            if (!mParent || mParent._type !== 'dir') { print(`mkdir: cannot create '${args[1]}': No such directory`, "error"); return null; }
+            if (mParent[mName]) { print(`mkdir: '${args[1]}': File exists`, "error"); return null; }
+            mParent[mName] = { _type: "dir", perms: "drwxr-xr-x", owner: currentUser };
+            return null;
+        }
+        case 'rm': {
+            if (args.length < 2) { print("rm: missing operand", "error"); return null; }
+            const rPath = resolvePath(args[1]); const rName = rPath.pop();
+            const rParent = getTargetNode(rPath);
+            if (!rParent || !rParent[rName]) { print(`rm: cannot remove '${args[1]}': No such file`, "error"); return null; }
+            if (rParent[rName]._type === 'dir' && !args.includes('-r') && !args.includes('-rf')) { print(`rm: cannot remove '${args[1]}': Is a directory`, "error"); return null; }
+            if (rParent[rName].owner !== currentUser && currentUser !== 'root') { print("rm: Permission denied", "error"); return null; }
+            delete rParent[rName];
+            return null;
+        }
+        case 'cp': {
+            if (args.length < 3) { print("cp: missing file operand", "error"); return null; }
+            const cpSrc = getTargetNode(resolvePath(args[1]));
+            if (!cpSrc || cpSrc._type === 'dir') { print(`cp: cannot copy '${args[1]}'`, "error"); return null; }
+            const cpDP = resolvePath(args[2]); const cpDN = cpDP.pop();
+            const cpPar = getTargetNode(cpDP);
+            if (!cpPar || cpPar._type !== 'dir') { print(`cp: target '${args[2]}': No such directory`, "error"); return null; }
+            cpPar[cpDN] = JSON.parse(JSON.stringify(cpSrc));
+            return null;
+        }
+        case 'chmod': {
+            if (args.length < 3) { print("chmod: missing operand", "error"); return null; }
+            if (currentUser !== 'root') { print("chmod: Operation not permitted", "error"); return null; }
+            const chNode = getTargetNode(resolvePath(args[2]));
+            if (!chNode) { print(`chmod: '${args[2]}': No such file`, "error"); return null; }
+            print(`chmod: mode of '${args[2]}' changed`, "system");
+            return null;
+        }
+        // === 시스템 정보 ===
+        case 'env':
+        case 'printenv':
+            outData = `USER=${currentUser}\nHOME=/home/${currentUser}\nSHELL=/bin/bash\nPATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\nLANG=en_US.UTF-8\nTERM=xterm-256color\nHOSTNAME=linux-core`;
+            break;
+        case 'history':
+            outData = history.length > 0 ? history.map((h, i) => `  ${(i + 1).toString().padStart(4)}  ${h}`).join('\n') : '(empty history)';
+            break;
+        case 'strings': {
+            let strC = pipeInput;
+            if (args[1]) {
+                const strF = getTargetNode(resolvePath(args[1]));
+                if (strF && (strF._type === 'file' || strF._type === 'exec')) strC = strF.content || `[binary: ${args[1]}]`;
+                else { print(`strings: ${args[1]}: No such file`, "error"); return null; }
+            }
+            if (!strC) { print("strings: missing input", "error"); return null; }
+            outData = strC.match(/[\x20-\x7E]{4,}/g)?.join('\n') || '(no strings found)';
+            break;
+        }
+        case 'file': {
+            if (args.length < 2) { print("file: missing operand", "error"); return null; }
+            const fNode = getTargetNode(resolvePath(args[1]));
+            if (!fNode) { print(`file: ${args[1]}: No such file`, "error"); return null; }
+            if (fNode._type === 'dir') outData = `${args[1]}: directory`;
+            else if (fNode._type === 'exec') outData = `${args[1]}: ELF 64-bit LSB executable, x86-64, dynamically linked`;
+            else {
+                const fc = fNode.content || '';
+                if (fc.match(/^[A-Za-z0-9+/=\s]+$/) && fc.length > 10) outData = `${args[1]}: ASCII text (possibly base64 encoded)`;
+                else if (fc.includes('$1$') || fc.includes(':*:')) outData = `${args[1]}: shadow password file, ASCII text`;
+                else outData = `${args[1]}: ASCII text`;
+            }
+            break;
+        }
+        case 'ps': {
+            outData = "  PID TTY          TIME CMD\n    1 ?        00:00:01 systemd\n  222 ?        00:00:00 sshd\n  333 tty1     00:00:00 bash\n  444 tty1     00:00:00 ps";
+            if (scenarioId === 5) outData += `\n  ${scenarioData.port} ?        00:00:02 node /opt/api/server.js`;
+            break;
+        }
+        // === 네트워크 ===
+        case 'ifconfig':
+        case 'ip':
+            outData = "eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500\n        inet 192.168.0.10  netmask 255.255.255.0  broadcast 192.168.0.255\n        ether 08:00:27:f5:aa:bb  txqueuelen 1000\n\nlo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536\n        inet 127.0.0.1  netmask 255.0.0.0";
+            break;
+        case 'ping': {
+            if (args.length < 2) { print("ping: missing host operand", "error"); return null; }
+            const pH = args[1];
+            const pIP = (pH === 'localhost' || pH === '127.0.0.1') ? '127.0.0.1' : '192.168.0.' + Math.floor(Math.random() * 254 + 1);
+            outData = `PING ${pH} (${pIP}): 56 data bytes\n64 bytes from ${pIP}: icmp_seq=0 ttl=64 time=0.045 ms\n64 bytes from ${pIP}: icmp_seq=1 ttl=64 time=0.032 ms\n--- ${pH} ping statistics ---\n2 packets transmitted, 2 received, 0% packet loss`;
+            break;
+        }
+        case 'ssh':
+            if (args.length < 2) { print("ssh: missing destination", "error"); return null; }
+            print(`ssh: connect to host ${args[1]} port 22: Connection refused`, "error");
+            return null;
+        case 'wget':
+            if (args.length < 2) { print("wget: missing URL", "error"); return null; }
+            print(`--${new Date().toISOString()}--  ${args[1]}\nResolving host... failed: Name or service not known.`, "error");
+            return null;
+        case 'man': {
+            const manDB = { ls:'ls - list directory contents\nUsage: ls [-a] [-l] [dir]  -a show hidden files, -l long format', cd:'cd - change directory\nUsage: cd [dir]  cd ~ home, cd .. up, cd / root', cat:'cat - print file content\nUsage: cat [file]', head:'head - output first part of files\nUsage: head [-n N] [file]  default: 10 lines', tail:'tail - output last part of files\nUsage: tail [-n N] [file]  default: 10 lines', find:'find - search for files\nUsage: find [path] -name [pattern]', grep:'grep - search text patterns\nUsage: command | grep [keyword]', su:'su - substitute user identity\nUsage: su [user]', base64:'base64 - encode/decode base64\nUsage: base64 -d [file] or pipe data', tr:'tr - translate characters\nUsage: tr [set1] [set2]  ROT13: tr \'A-Za-z\' \'N-ZA-Mn-za-m\'', crack:'crack - hash bruteforce\nUsage: crack --salt [salt] --wordlist [file] [hashfile]', 'jwt-forge':'jwt-forge - JWT token forgery\nUsage: jwt-forge --role=[role] --secret=[key]', curl:'curl - transfer data\nUsage: curl [-H "header"] [url]', netstat:'netstat - network connections\nUsage: netstat -tuln', chmod:'chmod - change file permissions\nUsage: chmod [mode] [file] (root only)', sort:'sort - sort lines of text\nUsage: sort [file] or pipe data  -r reverse', wc:'wc - word, line, byte count\nUsage: wc [file] or pipe data' };
+            if (!args[1]) { print("What manual page do you want?\nUsage: man [command]", "error"); return null; }
+            outData = manDB[args[1]] || `No manual entry for ${args[1]}`;
+            break;
+        }
         default:
             print(`${cmd}: command not found`, "error"); return null;
     }
